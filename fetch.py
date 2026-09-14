@@ -461,6 +461,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="look up metadata for user-supplied PDFs in data/pdfs by title, then exit")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)     # huggingface_hub's client is chatty
     cfg = load_config()
     try:
         if args.models:

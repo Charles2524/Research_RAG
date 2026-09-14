@@ -11,3 +11,9 @@ pymupdf4llm==1.28.2
 # Phase 2: embedding-model tokenizer for token-measured chunks; hub client used only in fetch.py
 tokenizers==0.23.2
 huggingface_hub==1.31.0
+# Phase 3: embeddings (CPU-only torch; pip on Windows resolves the CPU wheel) and vector index
+numpy==2.5.3
+torch==2.14.0
+sentence-transformers==6.0.1
+transformers==5.17.0
+sqlite-vec==0.1.9
