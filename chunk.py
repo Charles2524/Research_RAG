@@ -156,6 +156,15 @@ def chunk_markdown(cfg: Config, paper_id: str, md: str, size_tokens: int | None 
                 if merged_n <= budget:
                     windows[-2] = (c0, windows[-1][1])
                     windows.pop()
+        # A tiny section (caption, one-line note) rides along with the previous chunk when it fits.
+        if len(windows) == 1 and n < MIN_BODY_TOKENS and chunks:
+            prev = chunks[-1]
+            merged = prev.text + "\n\n" + (f"{sec.title}: " if sec.title else "") + sec.text.strip()
+            m_n = len(tok.encode(merged, add_special_tokens=False).ids)
+            if m_n <= size:
+                prev.text, prev.n_tokens = merged, m_n
+                prev.page_end = max(prev.page_end, sec.page_end)
+                continue
         for c0, c1 in windows:
             body = sec.text[c0:c1].strip()
             if not body:

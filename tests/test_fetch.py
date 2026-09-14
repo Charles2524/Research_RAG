@@ -140,8 +140,8 @@ def test_live_openalex_returns_parsed_records(cfg):
 def test_live_arxiv_search_returns_parsed_records(cfg):
     ax = ArXiv(cfg)
     recs = list(ax.search("retrieval-augmented generation", 5))
-    if not recs and ax.client.saw_rate_limit:
-        pytest.skip("UNVERIFIED: arXiv search API rate-limits this IP (HTTP 429 'Rate exceeded.')")
+    if not recs and ax.last_error:
+        pytest.skip(f"UNVERIFIED: arXiv search API unavailable from this IP: {ax.last_error}")
     assert len(recs) >= 3
     for p in recs:
         assert p.title and p.arxiv_id and p.doi and p.pdf_url.startswith("https://arxiv.org/pdf/")

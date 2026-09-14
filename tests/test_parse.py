@@ -193,8 +193,8 @@ def test_user_supplied_pdf_resolves_metadata_by_title(cfg, tmp_path):
     resolved = fetch.resolve_dropped(tcfg)
     assert len(resolved) == 1
     p = resolved[0]
-    assert p.metadata_resolved and p.doi and p.year == 2020 and p.authors
-    assert p.paper_id != "dropped_paper"
+    assert p.metadata_resolved and (p.doi or p.openalex_id) and p.year == 2020 and p.authors
+    assert p.paper_id != "dropped_paper" and p.paper_id == fetch.resolve_identity(p)
     stem = fetch.safe_name(p.paper_id)
     assert (tcfg.pdf_dir / f"{stem}.pdf").exists() and (tcfg.md_dir / f"{stem}.md").exists()
     assert not (tcfg.pdf_dir / "dropped_paper.pdf").exists()

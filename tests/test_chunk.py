@@ -40,8 +40,15 @@ MD = f"""<!-- page:1 -->
 
 # 3 Results
 
-Short section.
+{_sentences(4, 'results')}
 """
+
+
+def test_tiny_section_merges_into_previous_chunk(cfg):
+    md = "# A\n\n" + _sentences(10, 'a') + "\n\n# Figure 1\n\nCaption only.\n"
+    chunks = chunk_markdown(cfg, "p", md, 512, 0)
+    assert len(chunks) == 1 and chunks[0].section == "A"
+    assert chunks[0].text.endswith("Figure 1: Caption only.")
 
 
 def test_split_sections_tracks_titles_and_pages():
@@ -50,7 +57,7 @@ def test_split_sections_tracks_titles_and_pages():
     assert (secs[0].page_start, secs[0].page_end) == (1, 2)
     assert (secs[1].page_start, secs[1].page_end) == (2, 3)
     assert (secs[2].page_start, secs[2].page_end) == (3, 3)
-    assert "Short section." in secs[2].text and "#" not in secs[2].text
+    assert "results sentence number 0" in secs[2].text and "#" not in secs[2].text
 
 
 def test_chunks_carry_ids_sections_pages_and_prefix(cfg):

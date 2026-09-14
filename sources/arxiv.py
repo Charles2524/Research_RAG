@@ -70,12 +70,15 @@ class ArXiv(SourceAdapter):
             _text(entry, "arxiv:doi"), _text(entry, "arxiv:journal_ref"), _text(entry, "a:summary"),
         )
 
+    last_error: str | None = None   # why the most recent search returned nothing, if it did
+
     def _query(self, params: dict) -> list[Paper]:
+        self.last_error = None
         try:
             root = ET.fromstring(self.client.get_text(API, params))
         except (SourceError, ET.ParseError) as e:
-            log.warning("%s query failed: %s%s", self.name, e,
-                        " [rate-limited by arXiv]" if self.client.saw_rate_limit else "")
+            self.last_error = f"{e}{' [rate-limited by arXiv]' if self.client.saw_rate_limit else ''}"
+            log.warning("%s query failed: %s", self.name, self.last_error)
             return []
         return [p for p in (self.parse_entry(e) for e in root.findall("a:entry", NS)) if p]
 
