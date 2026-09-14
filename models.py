@@ -1,0 +1,128 @@
+"""Dataclasses shared across the pipeline: Paper, Chunk, Retrieved, Answer."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field, fields
+
+# Fetch outcome statuses (SPEC 5.4). "pending" means not yet attempted.
+STATUS_PENDING = "pending"
+STATUS_FETCHED = "fetched"
+STATUS_NO_OA_PDF = "no_oa_pdf"
+STATUS_HTTP_ERROR = "http_error"
+STATUS_TIMEOUT = "timeout"
+STATUSES = (STATUS_PENDING, STATUS_FETCHED, STATUS_NO_OA_PDF, STATUS_HTTP_ERROR, STATUS_TIMEOUT)
+
+
+@dataclass
+class Paper:
+    paper_id: str
+    title: str
+    authors: list[str] = field(default_factory=list)
+    year: int | None = None
+    doi: str | None = None
+    openalex_id: str | None = None
+    arxiv_id: str | None = None
+    s2_id: str | None = None
+    venue: str | None = None
+    abstract: str | None = None
+    source: str = ""                 # adapter that first produced the record
+    pdf_url: str | None = None
+    status: str = STATUS_PENDING
+    metadata_resolved: bool = True   # False => filename-based citation (SPEC 6.3)
+    references: list[str] = field(default_factory=list)   # DOIs, from the excised References section
+
+    def __post_init__(self) -> None:
+        if self.status not in STATUSES:
+            raise ValueError(f"invalid status {self.status!r}; expected one of {STATUSES}")
+
+    @property
+    def has_full_text(self) -> bool:
+        return self.status == STATUS_FETCHED
+
+    def citation_label(self) -> str:
+        """Short label for citations, e.g. 'Lewis 2020'."""
+        first = self.authors[0].split()[-1] if self.authors else "Unknown"
+        return f"{first} {self.year}" if self.year else first
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Paper":
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+    @classmethod
+    def from_json(cls, s: str) -> "Paper":
+        return cls.from_dict(json.loads(s))
+
+
+@dataclass
+class Chunk:
+    chunk_id: str        # f"{paper_id}#{ordinal}"
+    paper_id: str
+    ordinal: int
+    section: str
+    page_start: int
+    page_end: int
+    text: str            # section title already prepended (SPEC 6.4)
+    n_tokens: int
+
+    @staticmethod
+    def make_id(paper_id: str, ordinal: int) -> str:
+        return f"{paper_id}#{ordinal}"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Chunk":
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+
+@dataclass
+class Retrieved:
+    chunk: Chunk
+    score: float
+    rank: int
+    mode: str            # bm25 | dense | hybrid | rerank
+
+
+@dataclass
+class Answer:
+    text: str
+    cited_ids: list[str]
+    retrieved_ids: list[str]
+    model: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    latency_s: float = 0.0
+
+    @property
+    def invalid_citations(self) -> list[str]:
+        """Cited IDs not present in the retrieved set (SPEC 7.3). Never silently dropped."""
+        allowed = set(self.retrieved_ids)
+        return [c for c in self.cited_ids if c not in allowed]
+
+    @property
+    def citation_integrity(self) -> float:
+        """Fraction of citations that resolve to a retrieved chunk; 1.0 when there are none."""
+        if not self.cited_ids:
+            return 1.0
+        return 1.0 - len(self.invalid_citations) / len(self.cited_ids)
+
+    @property
+    def tokens_per_s(self) -> float:
+        return self.completion_tokens / self.latency_s if self.latency_s > 0 else 0.0
+
+    def to_dict(self) -> dict:
+        d = asdict(self)
+        d["invalid_citations"] = self.invalid_citations
+        d["citation_integrity"] = self.citation_integrity
+        d["tokens_per_s"] = self.tokens_per_s
+        return d

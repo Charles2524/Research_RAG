@@ -1,0 +1,50 @@
+# Runtime configuration. Secrets and the contact email live in .env, never here.
+# Any value can be overridden per-run by ablate.py via Config.with_overrides().
+
+offline: false            # C3: true disables every network client process-wide (.env OFFLINE=1 also works)
+
+data_dir: data
+results_dir: results
+
+parser: pymupdf4llm       # Parser backend; alternatives can be timed for the report
+
+chunk:
+  size_tokens: 512
+  overlap_tokens: 64
+
+embedding:
+  model: BAAI/bge-small-en-v1.5
+  dim: 384
+
+reranker:
+  model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  enabled: false
+
+retrieval:
+  mode: hybrid            # bm25 | dense | hybrid
+  k: 10
+  rrf_weight: 0.5         # weight of dense list in RRF fusion (1 - weight goes to bm25)
+  rrf_k: 60
+
+generation:
+  model: qwen3:4b
+  fallback_model: qwen3:1.7b
+  ollama_host: http://127.0.0.1:11434   # must be loopback; the pipeline never talks to a remote host
+  context_chunks: 5
+  token_budget: 3000
+  timeout_s: 300
+
+fetch:
+  query: retrieval-augmented generation
+  max_papers: 40
+  per_paper_timeout_s: 120              # covers download + parse
+  sleep_s:                              # per-source politeness delay between calls
+    arxiv: 3.0
+    openalex: 1.0
+    crossref: 1.0
+    unpaywall: 1.0
+    europepmc: 1.0
+    datacite: 1.0
+    semanticscholar: 3.0
+    core: 1.0
+    pubmed: 0.4

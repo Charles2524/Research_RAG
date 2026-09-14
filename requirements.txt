@@ -1,0 +1,4 @@
+# Pinned at each phase gate. Phase 0: config + tests only.
+PyYAML==6.0.3
+python-dotenv==1.2.3
+pytest==9.1.1
