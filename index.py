@@ -263,9 +263,9 @@ def query_fts(conn: sqlite3.Connection, query: str, k: int = 10) -> list[tuple[s
 
 
 def _fts_escape(query: str) -> str:
-    """Turn free text into a safe FTS5 query: each token double-quoted, implicit AND."""
+    """Turn free text into a safe FTS5 query: each token double-quoted, OR-ed (BM25 ranks by term weight)."""
     tokens = [t.replace('"', '""') for t in query.split() if t.strip()]
-    return " ".join(f'"{t}"' for t in tokens)
+    return " OR ".join(f'"{t}"' for t in tokens)
 
 
 # ----- meta -----
@@ -408,6 +408,24 @@ def build_index(cfg: Config, conn: sqlite3.Connection) -> dict:
     set_meta(conn, "embedding_model", model_name)
     log.info("index built: %s", stats)
     return stats
+
+
+def index_is_stale(conn: sqlite3.Connection, model: str) -> bool:
+    """True when any chunk lacks a vector for this model (re-chunking cascades vectors away)."""
+    if count_chunks(conn) == 0:
+        return False
+    missing = conn.execute(
+        """SELECT COUNT(*) FROM chunks c LEFT JOIN vectors v ON v.chunk_id = c.chunk_id AND v.model = ?
+           WHERE v.chunk_id IS NULL""", (model,)).fetchone()[0]
+    return missing > 0 or get_meta(conn, "vector_backend") is None
+
+
+def ensure_index(cfg: Config, conn: sqlite3.Connection) -> dict | None:
+    """Rebuild the vector index if it is stale. Cheap when the embedding cache is warm."""
+    if index_is_stale(conn, cfg.embedding_model):
+        log.info("vector index stale (chunks without vectors); rebuilding")
+        return build_index(cfg, conn)
+    return None
 
 
 def _build_vec_table(cfg: Config, conn: sqlite3.Connection) -> None:
