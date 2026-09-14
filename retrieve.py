@@ -28,9 +28,8 @@ _CONN: dict[str, sqlite3.Connection] = {}
 def get_conn(cfg: Config) -> sqlite3.Connection:
     key = str(cfg.index_path)
     if key not in _CONN:
-        conn = index.connect(cfg.index_path)
-        index.ensure_index(cfg, conn)          # re-chunking cascades vectors away; rebuild from cache
-        _CONN[key] = conn
+        _CONN[key] = index.connect(cfg.index_path)
+    index.ensure_index(cfg, _CONN[key])        # re-chunking cascades vectors away; rebuild from cache (cheap check)
     return _CONN[key]
 
 

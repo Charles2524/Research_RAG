@@ -189,7 +189,59 @@ def discover(cfg: Config, query: str | None = None, limit: int | None = None) ->
     records: list[Paper] = []
     for i in range(max((len(f) for f in per_source), default=0)):
         records.extend(f[i] for f in per_source if i < len(f))
-    return dedup(records)[:limit]
+    papers = dedup(records)[:limit]
+    return enrich_arxiv(cfg, papers)
+
+
+ARXIV_AUTHORITATIVE = ("title", "authors", "abstract")
+
+
+def enrich_arxiv(cfg: Config, papers: list[Paper]) -> list[Paper]:
+    """For arXiv papers known only through aggregators, adopt arXiv's own title/authors/abstract.
+
+    Aggregator records for arXiv DOIs can carry the wrong title (seen in OpenAlex for
+    10.48550/arxiv.2005.11401). arXiv's OAI-PMH record is authoritative for its own papers.
+    """
+    try:
+        ax = ArXiv(cfg)
+    except SourceUnavailable as e:
+        log.info("arxiv enrichment skipped: %s", e)
+        return papers
+    for p in papers:
+        aid = normalize_arxiv_id(p.arxiv_id)
+        if not aid or "arxiv" in p.source.split("+"):
+            continue
+        rec = ax.get_by_id(aid)
+        if not rec:
+            continue
+        changed = []
+        for field in ARXIV_AUTHORITATIVE:
+            v = getattr(rec, field)
+            if v and v != getattr(p, field):
+                setattr(p, field, v)
+                changed.append(field)
+        if p.year is None:
+            p.year = rec.year
+        if changed:
+            p.source = p.source + "+arxiv"
+            log.info("%s: arXiv metadata adopted for %s", p.paper_id, ", ".join(changed))
+    return papers
+
+
+def refresh_arxiv_metadata(cfg: Config) -> list[Paper]:
+    """Apply enrich_arxiv to every stored record and rewrite changed meta files."""
+    changed = []
+    for p in load_corpus(cfg):
+        before = (p.title, tuple(p.authors), p.abstract)
+        enrich_arxiv(cfg, [p])
+        if (p.title, tuple(p.authors), p.abstract) != before:
+            rec = read_meta(cfg, p.paper_id) or {}
+            rec["paper"] = p.to_dict()
+            rec["note"] = (rec.get("note", "") + " arXiv metadata adopted").strip()
+            rec["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            meta_path(cfg, p).write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            changed.append(p)
+    return changed
 
 
 # ----- download (SPEC 5.4) -----
@@ -459,6 +511,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--models", action="store_true", help="download embedding/reranker model files only")
     ap.add_argument("--resolve-dropped", action="store_true",
                     help="look up metadata for user-supplied PDFs in data/pdfs by title, then exit")
+    ap.add_argument("--refresh-arxiv", action="store_true",
+                    help="re-adopt arXiv's own metadata for stored arXiv papers, then exit")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)     # huggingface_hub's client is chatty
@@ -471,6 +525,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.resolve_dropped:
             done = resolve_dropped(cfg)
             print(f"resolved {len(done)} user-supplied paper(s)")
+            for p in done:
+                print(f"  {p.paper_id}  {p.title[:80]}")
+            return 0
+        if args.refresh_arxiv:
+            done = refresh_arxiv_metadata(cfg)
+            print(f"updated {len(done)} paper(s) from arXiv metadata")
             for p in done:
                 print(f"  {p.paper_id}  {p.title[:80]}")
             return 0
