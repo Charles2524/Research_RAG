@@ -145,9 +145,15 @@ def load_config(
     env: dict[str, str | None] = {}
     if env_path.exists():
         env.update(dotenv_values(env_path))
-    for key in ("CONTACT_EMAIL", "OFFLINE", *KEYED_SOURCES.values()):
+    for key in ("CONTACT_EMAIL", "OFFLINE", "HF_HOME", *KEYED_SOURCES.values()):
         if os.environ.get(key) is not None:
             env[key] = os.environ[key]
+    # Model cache location for huggingface_hub / sentence-transformers. .env may point it
+    # at another drive; otherwise it lives under data/cache so nothing lands outside the repo.
+    hf_home = env.get("HF_HOME") or str(_resolve(ROOT if not path.is_absolute() else path.parent,
+                                                 raw.get("data_dir", "data")) / "cache" / "hf")
+    os.environ["HF_HOME"] = hf_home
+    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
     offline = _as_bool(raw.get("offline", False))
     if env.get("OFFLINE") is not None:
@@ -245,6 +251,15 @@ def validate(cfg: Config) -> None:
         errors.append("fetch.sleep_s values must be >= 0")
     if errors:
         raise ConfigError("invalid configuration:\n  - " + "\n  - ".join(errors))
+
+
+def hf_hub_cache() -> Path:
+    """The huggingface_hub 'hub' cache directory under HF_HOME, resolved at call time.
+
+    huggingface_hub freezes its default at import, which may precede load_config();
+    pass this explicitly as cache_dir / cache_folder instead of relying on the default.
+    """
+    return Path(os.environ.get("HF_HOME") or (ROOT / "data" / "cache" / "hf")) / "hub"
 
 
 # ----- process utilities -----

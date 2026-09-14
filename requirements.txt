@@ -5,3 +5,9 @@ python-dotenv==1.2.3
 pytest==9.1.1
 # Phase 1: the only network client; used solely in sources/ and fetch.py (C1)
 requests==2.34.2
+# Phase 2: PDF -> markdown (needs the MS Visual C++ 2015-2022 x64 runtime on Windows)
+pymupdf==1.28.2
+pymupdf4llm==1.28.2
+# Phase 2: embedding-model tokenizer for token-measured chunks; hub client used only in fetch.py
+tokenizers==0.23.2
+huggingface_hub==1.31.0

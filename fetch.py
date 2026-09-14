@@ -17,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-from config import Config, load_config
+from config import Config, hf_hub_cache, load_config
 from models import (STATUS_FETCHED, STATUS_HTTP_ERROR, STATUS_NO_OA_PDF, STATUS_PENDING,
                     STATUS_TIMEOUT, Paper)
 from sources import CachedClient, SourceAdapter, SourceUnavailable, available_adapters, norm_title, user_agent
@@ -366,6 +366,89 @@ def load_corpus(cfg: Config) -> list[Paper]:
     return papers
 
 
+# ----- user-supplied PDFs: metadata by title lookup (SPEC 6.3) -----
+
+TITLE_MATCH_MIN = 0.9
+
+
+def _title_similarity(a: str, b: str) -> float:
+    import difflib
+    return difflib.SequenceMatcher(None, norm_title(a), norm_title(b)).ratio()
+
+
+def resolve_dropped(cfg: Config) -> list[Paper]:
+    """Look up every metadata-unresolved paper by title (Crossref, then OpenAlex).
+
+    On a confident match the canonical record is adopted, paper_id is reassigned by the
+    normal precedence chain and the pdf/md/meta files are renamed. Returns resolved papers.
+    """
+    if cfg.offline:
+        raise SourceUnavailable("metadata lookup disabled: offline mode is on (C3).")
+    lookups = [a for a in available_adapters(cfg, [Crossref, OpenAlex])]
+    resolved: list[Paper] = []
+    for paper in load_corpus(cfg):
+        if paper.metadata_resolved or not paper.title or paper.title == paper.paper_id:
+            continue
+        match, score, via = None, 0.0, ""
+        for ad in lookups:
+            for cand in ad.lookup_title(paper.title, 3):
+                s = _title_similarity(paper.title, cand.title)
+                if s > score:
+                    match, score, via = cand, s, ad.name
+            if score >= TITLE_MATCH_MIN:
+                break
+        if not match or score < TITLE_MATCH_MIN:
+            log.warning("%s: no confident title match (best %.2f); keeping filename citation", paper.paper_id, score)
+            continue
+        old = paper
+        new = Paper(**{**match.to_dict(), "status": STATUS_FETCHED, "metadata_resolved": True,
+                       "source": f"user+{via}", "references": old.references})
+        new.paper_id = resolve_identity(new)
+        _rename_paper_files(cfg, old, new)
+        log.info("%s -> %s via %s (title similarity %.2f)", old.paper_id, new.paper_id, via, score)
+        resolved.append(new)
+    return resolved
+
+
+def _rename_paper_files(cfg: Config, old: Paper, new: Paper) -> None:
+    old_stem, new_stem = safe_name(old.paper_id), safe_name(new.paper_id)
+    old_meta = cfg.meta_dir / f"{old_stem}.json"
+    rec = json.loads(old_meta.read_text(encoding="utf-8")) if old_meta.exists() else {}
+    for d, ext in ((cfg.pdf_dir, ".pdf"), (cfg.md_dir, ".md")):
+        src = d / f"{old_stem}{ext}"
+        if src.exists() and old_stem != new_stem:
+            src.replace(d / f"{new_stem}{ext}")
+    rec["paper"] = new.to_dict()
+    rec["pdf_file"] = f"{new_stem}.pdf"
+    rec.setdefault("note", "")
+    rec["note"] = (rec["note"] + f" resolved from {old.paper_id}").strip()
+    rec["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    if old_meta.exists() and old_stem != new_stem:
+        old_meta.unlink()
+    (cfg.meta_dir / f"{new_stem}.json").write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ----- model assets (network layer; the pipeline loads them from the local HF cache only) -----
+
+MODEL_FILES = ["config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json",
+               "vocab.txt", "model.safetensors", "modules.json", "sentence_bert_config.json",
+               "1_Pooling/*", "config_sentence_transformers.json"]
+
+
+def download_models(cfg: Config, include_reranker: bool = True) -> list[str]:
+    """Fetch embedding (and reranker) model files into the HF cache. Idempotent."""
+    if cfg.offline:
+        raise SourceUnavailable("model download disabled: offline mode is on (C3).")
+    from huggingface_hub import snapshot_download
+    names = [cfg.embedding_model] + ([cfg.reranker_model] if include_reranker else [])
+    paths = []
+    for name in names:
+        p = snapshot_download(name, allow_patterns=MODEL_FILES, cache_dir=hf_hub_cache())
+        log.info("model %s -> %s", name, p)
+        paths.append(p)
+    return paths
+
+
 # ----- CLI -----
 
 def main(argv: list[str] | None = None) -> int:
@@ -373,10 +456,23 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--query", help="search query (default: fetch.query in config.yaml)")
     ap.add_argument("--limit", type=int, help="max papers per source and overall")
     ap.add_argument("--no-download", action="store_true", help="discovery only")
+    ap.add_argument("--models", action="store_true", help="download embedding/reranker model files only")
+    ap.add_argument("--resolve-dropped", action="store_true",
+                    help="look up metadata for user-supplied PDFs in data/pdfs by title, then exit")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     cfg = load_config()
     try:
+        if args.models:
+            for p in download_models(cfg):
+                print(f"model files: {p}")
+            return 0
+        if args.resolve_dropped:
+            done = resolve_dropped(cfg)
+            print(f"resolved {len(done)} user-supplied paper(s)")
+            for p in done:
+                print(f"  {p.paper_id}  {p.title[:80]}")
+            return 0
         papers = discover(cfg, args.query, args.limit)
         print(f"discovered {len(papers)} papers")
         if args.no_download:
