@@ -33,6 +33,11 @@ generation:
   context_chunks: 5
   token_budget: 3000
   timeout_s: 300
+  max_tokens: 1536                      # num_predict cap; bounds runaway reasoning
+  think: false                          # ask Ollama to disable chain-of-thought where the model allows it
+  thinking_only_models: [qwen3:4b]      # Qwen3-2507 "thinking" builds ignore think=false and leak reasoning into
+                                        # the answer; for these we keep think=true so reasoning stays in Ollama's
+                                        # separate `thinking` field (its tokens are still counted as cost)
 
 fetch:
   query: retrieval-augmented generation

@@ -101,7 +101,16 @@ class Answer:
     model: str
     prompt_tokens: int = 0
     completion_tokens: int = 0
-    latency_s: float = 0.0
+    latency_s: float = 0.0       # wall time of the request (includes model load on first call)
+    eval_s: float = 0.0          # pure generation time reported by Ollama (tokens/s denominator)
+    prompt_eval_s: float = 0.0   # prompt processing time reported by Ollama (dominant on CPU)
+    load_s: float = 0.0          # model load time reported by Ollama (first call only)
+    thinking_chars: int = 0      # length of Ollama's separate reasoning field (its tokens are in completion_tokens)
+    think: bool = False          # whether chain-of-thought was requested
+
+    @property
+    def prompt_tokens_per_s(self) -> float:
+        return self.prompt_tokens / self.prompt_eval_s if self.prompt_eval_s > 0 else 0.0
 
     @property
     def invalid_citations(self) -> list[str]:
@@ -118,7 +127,8 @@ class Answer:
 
     @property
     def tokens_per_s(self) -> float:
-        return self.completion_tokens / self.latency_s if self.latency_s > 0 else 0.0
+        denom = self.eval_s or self.latency_s
+        return self.completion_tokens / denom if denom > 0 else 0.0
 
     def to_dict(self) -> dict:
         d = asdict(self)

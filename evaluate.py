@@ -233,7 +233,7 @@ def _generation_metrics(cfg: Config, items: list[dict], mode: str, use_rerank: b
                     "context": ans.retrieved_ids, "model": ans.model, "tokens_per_s": round(ans.tokens_per_s, 2),
                     "latency_s": ans.latency_s, "completion_tokens": ans.completion_tokens,
                     "thinking_chars": ans.thinking_chars, "grade": None})
-    path = cfg.results_dir / f"answers_{run_name}.jsonl"
+    path = cfg.results_dir / f"answers_{fetch.safe_name(run_name)}.jsonl"    # ':' in model tags is not a filename char
     path.write_text("".join(json.dumps(o, ensure_ascii=False) + "\n" for o in out), encoding="utf-8")
     llm_mb = generate.resident_mb(cfg, cfg.llm_model)
     generate.unload_model(cfg, cfg.llm_model)

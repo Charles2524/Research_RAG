@@ -69,6 +69,9 @@ class Config:
     per_paper_timeout_s: int
     sleep_s: dict[str, float] = field(default_factory=dict)
     api_keys: dict[str, str | None] = field(default_factory=dict)
+    max_tokens: int = 1536
+    think: bool = False
+    thinking_only_models: tuple[str, ...] = ()
 
     # ----- derived paths (SPEC 4.3) -----
     @property
@@ -114,6 +117,10 @@ class Config:
 
     def has_key(self, source: str) -> bool:
         return bool(self.api_keys.get(source))
+
+    def think_for(self, model: str) -> bool:
+        """Whether to request chain-of-thought for this model (forced on for thinking-only builds)."""
+        return True if model in self.thinking_only_models else self.think
 
 
 def _as_bool(value: Any) -> bool:
@@ -191,6 +198,9 @@ def load_config(
         context_chunks=int(_get(gen, "context_chunks", 5)),
         token_budget=int(_get(gen, "token_budget", 3000)),
         llm_timeout_s=int(_get(gen, "timeout_s", 300)),
+        max_tokens=int(_get(gen, "max_tokens", 1536)),
+        think=_as_bool(_get(gen, "think", False)),
+        thinking_only_models=tuple(str(m) for m in (_get(gen, "thinking_only_models", []) or [])),
         fetch_query=str(_get(fetch, "query", "")),
         fetch_max_papers=int(_get(fetch, "max_papers", 40)),
         per_paper_timeout_s=int(_get(fetch, "per_paper_timeout_s", 120)),
@@ -233,6 +243,8 @@ def validate(cfg: Config) -> None:
         errors.append("generation.token_budget must be > 0")
     if cfg.llm_timeout_s <= 0:
         errors.append("generation.timeout_s must be > 0")
+    if cfg.max_tokens <= 0:
+        errors.append("generation.max_tokens must be > 0")
     host = urlparse(cfg.ollama_host)
     if host.scheme != "http" or host.hostname not in LOOPBACK_HOSTS:
         errors.append(
