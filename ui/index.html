@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Reading Room</title>
+<link rel="stylesheet" href="/ui/fonts/fonts.css">
+<link rel="stylesheet" href="/ui/app.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c2.2 2 2.2 10 0 12M8 2c-2.2 2-2.2 10 0 12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></symbol>
+    <symbol id="i-send" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 2h5l3 3v9H4z"/><path d="M9 2v3h3M6 8h4M6 11h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Reading Room</span>
+    <span class="brand-sub" id="corpus-line">Loading corpus…</span>
+  </div>
+  <div class="top-right">
+    <span class="pill pill-local" id="privacy-pill" title="Retrieval and generation run on this machine. Paper text never leaves it.">
+      <svg class="ic"><use href="#i-lock"/></svg><span id="privacy-text">Local · nothing leaves this machine</span>
+    </span>
+    <button class="btn btn-quiet" id="open-discover" type="button">
+      <svg class="ic"><use href="#i-plus"/></svg>Add papers
+    </button>
+  </div>
+</header>
+
+<nav class="switch" id="mobile-switch" aria-label="Panels">
+  <button type="button" data-panel="library">Library</button>
+  <button type="button" data-panel="ask" class="is-on">Ask</button>
+  <button type="button" data-panel="evidence">Evidence</button>
+</nav>
+
+<main class="room">
+  <aside class="panel library" id="panel-library" aria-label="Library">
+    <div class="panel-head">
+      <h2>Library <span class="count" id="library-count"></span></h2>
+      <label class="field field-search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input id="library-filter" type="search" placeholder="Filter by title, author, year" autocomplete="off">
+      </label>
+    </div>
+    <ol class="paper-list" id="paper-list"><li class="skeleton"></li><li class="skeleton"></li><li class="skeleton"></li></ol>
+  </aside>
+
+  <section class="panel conversation" id="panel-ask" aria-label="Conversation">
+    <div class="thread" id="thread">
+      <div class="empty" id="empty-state">
+        <p class="empty-title">Ask something the papers can answer.</p>
+        <p class="empty-body">Every sentence in the answer ends with a source marker. Click one to read the exact passage on the right.</p>
+        <div class="empty-examples" id="examples">
+          <button type="button" class="example">What are the two main components of retrieval-augmented generation, and how do they interact?</button>
+          <button type="button" class="example">Which pre-trained models supply the retriever and the generator in the original RAG formulation?</button>
+          <button type="button" class="example">Which model does CRAG fine-tune as its retrieval evaluator?</button>
+        </div>
+      </div>
+    </div>
+    <form class="composer" id="composer">
+      <label class="visually-hidden" for="question">Question</label>
+      <textarea id="question" rows="2" placeholder="Ask the corpus…" autocomplete="off"></textarea>
+      <div class="composer-row">
+        <div class="seg" role="radiogroup" aria-label="Retrieval" id="mode-seg">
+          <button type="button" role="radio" data-mode="bm25">Keyword</button>
+          <button type="button" role="radio" data-mode="dense">Semantic</button>
+          <button type="button" role="radio" data-mode="hybrid" aria-checked="true" class="is-on">Hybrid</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="rerank"><span>Rerank</span></label>
+        <label class="field field-inline"><span>Model</span><select id="model"></select></label>
+        <label class="field field-inline"><span>Passages</span><input type="number" id="k" min="3" max="20" value="10"></label>
+        <button class="btn btn-primary" id="send" type="submit" disabled>
+          Answer<svg class="ic"><use href="#i-send"/></svg>
+        </button>
+      </div>
+      <p class="composer-note" id="composer-note">Enter sends · Shift+Enter for a new line</p>
+    </form>
+  </section>
+
+  <aside class="panel evidence" id="panel-evidence" aria-label="Evidence">
+    <div class="panel-head">
+      <h2>Evidence <span class="count" id="evidence-count"></span></h2>
+      <p class="panel-sub" id="evidence-sub">Passages retrieved for the current answer appear here.</p>
+    </div>
+    <ol class="source-list" id="source-list"></ol>
+  </aside>
+</main>
+
+<div class="drawer" id="discover" hidden>
+  <div class="drawer-scrim" data-close></div>
+  <section class="drawer-panel" role="dialog" aria-labelledby="discover-title" aria-modal="true">
+    <header class="drawer-head">
+      <h2 id="discover-title"><svg class="ic"><use href="#i-globe"/></svg>Add papers from the web</h2>
+      <button class="btn btn-icon" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </header>
+    <p class="drawer-copy">This is the one action that uses the network. Your search terms go to OpenAlex, arXiv, Europe PMC and PubMed. Open-access PDFs are downloaded, parsed and indexed here. Paper text, chunks and answers never leave this machine.</p>
+    <form id="discover-form" class="drawer-form">
+      <label class="field"><span>Search terms</span><input id="discover-query" type="text" value="retrieval-augmented generation" required></label>
+      <label class="field field-inline"><span>Up to</span><input id="discover-limit" type="number" min="1" max="100" value="10"><span>papers</span></label>
+      <button class="btn btn-primary" id="discover-run" type="submit">Discover and index</button>
+    </form>
+    <ol class="steps" id="discover-steps"></ol>
+  </section>
+</div>
+
+<script src="/ui/app.js"></script>
+</body>
+</html>

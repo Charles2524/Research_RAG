@@ -14,6 +14,7 @@ import os
 import sqlite3
 import time
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")   # pipeline modules never touch the hub (C1)
@@ -29,6 +30,7 @@ BACKEND_NUMPY = "numpy"
 QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "   # bge v1.5 query prefix
 _EMBEDDER: dict[str, object] = {}
 _NUMPY_INDEX: dict[str, tuple[list[str], np.ndarray]] = {}
+_EMBED_POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="embed")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS papers (
@@ -361,8 +363,11 @@ def embed_texts(cfg: Config, conn: sqlite3.Connection, texts: list[str], batch_s
                 missing.append(i + j)
     if missing:
         model = get_embedder(cfg)
-        vecs = model.encode([texts[i] for i in missing], batch_size=batch_size, normalize_embeddings=True,
-                            convert_to_numpy=True, show_progress_bar=False)
+        # Every encode runs on one dedicated thread: torch's first inference on a fresh thread costs
+        # seconds (thread-pool and kernel initialisation), which a request thread must never pay.
+        vecs = _EMBED_POOL.submit(
+            model.encode, [texts[i] for i in missing], batch_size=batch_size, normalize_embeddings=True,
+            convert_to_numpy=True, show_progress_bar=False).result()
         conn.executemany(
             "INSERT OR REPLACE INTO embedding_cache(text_hash, model, dim, embedding) VALUES (?,?,?,?)",
             [(hashes[i], model_name, cfg.embedding_dim, _to_blob(v)) for i, v in zip(missing, vecs)])
@@ -474,7 +479,7 @@ def query_vector(cfg: Config, conn: sqlite3.Connection, query_vec: np.ndarray, k
 
 
 def index_stats(cfg: Config, conn: sqlite3.Connection) -> dict:
-    conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE)")      # never waits on writers (the UI status call uses this)
     size = cfg.index_path.stat().st_size if cfg.index_path.exists() else 0
     return {
         "vector_backend": get_meta(conn, "vector_backend") or "unprobed",

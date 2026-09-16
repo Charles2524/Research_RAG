@@ -188,29 +188,19 @@ def parse_citations(text: str, n_sources: int) -> tuple[list[int], list[str]]:
 
 # ----- generation -----
 
-def generate(cfg: Config, query: str, retrieved: Sequence[Retrieved], model: str | None = None,
-             papers: dict | None = None, think: bool | None = None) -> Answer:
-    """Produce a cited answer over the retrieved chunks. Answer.invalid_citations lists out-of-set ids.
-
-    Raises GenerationError when the model returns no answer text (e.g. the token cap was spent on
-    reasoning); callers that aggregate metrics record that as a failed answer.
-    """
-    model = model or cfg.llm_model
-    think = cfg.think_for(model) if think is None else think
-    context = assemble_context(cfg, retrieved)
-    prompt = build_prompt(cfg, query, context, papers)
-    payload = {
-        "model": model, "stream": False, "think": think,
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-        "options": {"temperature": 0.0, "num_ctx": num_ctx(cfg), "seed": 0,
-                    "num_predict": cfg.max_tokens},
+def _payload(cfg: Config, model: str, query: str, context: Sequence[Retrieved], papers: dict | None,
+             think: bool, stream: bool) -> dict:
+    return {
+        "model": model, "stream": stream, "think": think,
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT},
+                     {"role": "user", "content": build_prompt(cfg, query, context, papers)}],
+        "options": {"temperature": 0.0, "num_ctx": num_ctx(cfg), "seed": 0, "num_predict": cfg.max_tokens},
     }
-    t0 = time.perf_counter()
-    resp = ollama_call(cfg, "POST", "/api/chat", payload)
-    latency = time.perf_counter() - t0
-    msg = resp.get("message") or {}
-    text = (msg.get("content") or "").strip()
-    thinking = (msg.get("thinking") or "").strip()
+
+
+def _finish(cfg: Config, model: str, context: Sequence[Retrieved], text: str, thinking: str, resp: dict,
+            latency: float, think: bool) -> Answer:
+    text = text.strip()
     if not text:
         raise GenerationError(
             f"empty answer from {model} (done_reason={resp.get('done_reason')}, eval_count={resp.get('eval_count')}, "
@@ -224,8 +214,75 @@ def generate(cfg: Config, query: str, retrieved: Sequence[Retrieved], model: str
         eval_s=round(int(resp.get("eval_duration", 0)) / 1e9, 3),
         prompt_eval_s=round(int(resp.get("prompt_eval_duration", 0)) / 1e9, 3),
         load_s=round(int(resp.get("load_duration", 0)) / 1e9, 3),
-        thinking_chars=len(thinking), think=think,
+        thinking_chars=len(thinking.strip()), think=think,
     )
+
+
+def generate(cfg: Config, query: str, retrieved: Sequence[Retrieved], model: str | None = None,
+             papers: dict | None = None, think: bool | None = None) -> Answer:
+    """Produce a cited answer over the retrieved chunks. Answer.invalid_citations lists out-of-set ids.
+
+    Raises GenerationError when the model returns no answer text (e.g. the token cap was spent on
+    reasoning); callers that aggregate metrics record that as a failed answer.
+    """
+    model = model or cfg.llm_model
+    think = cfg.think_for(model) if think is None else think
+    context = assemble_context(cfg, retrieved)
+    t0 = time.perf_counter()
+    resp = ollama_call(cfg, "POST", "/api/chat", _payload(cfg, model, query, context, papers, think, stream=False))
+    latency = time.perf_counter() - t0
+    msg = resp.get("message") or {}
+    return _finish(cfg, model, context, msg.get("content") or "", msg.get("thinking") or "", resp, latency, think)
+
+
+def generate_stream(cfg: Config, query: str, retrieved: Sequence[Retrieved], model: str | None = None,
+                    papers: dict | None = None, think: bool | None = None):
+    """Streaming twin of generate(): yields ("thinking", delta) / ("token", delta) events, then ("answer", Answer).
+
+    Same loopback http.client transport; the NDJSON stream is read line by line. A final
+    GenerationError (empty answer) is raised after the stream ends, as in generate().
+    """
+    model = model or cfg.llm_model
+    think = cfg.think_for(model) if think is None else think
+    context = assemble_context(cfg, retrieved)
+    host, port = _host_port(cfg)
+    body = json.dumps(_payload(cfg, model, query, context, papers, think, stream=True)).encode("utf-8")
+    conn = http.client.HTTPConnection(host, port, timeout=cfg.llm_timeout_s)
+    t0 = time.perf_counter()
+    text, thinking, final = [], [], {}
+    try:
+        conn.request("POST", "/api/chat", body=body, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        if resp.status >= 400:
+            raise GenerationError(f"Ollama POST /api/chat -> HTTP {resp.status}: {resp.read()[:300].decode('utf-8', 'replace')}")
+        while True:
+            line = resp.readline()
+            if not line:
+                break
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            msg = obj.get("message") or {}
+            if msg.get("thinking"):
+                thinking.append(msg["thinking"])
+                yield ("thinking", msg["thinking"])
+            if msg.get("content"):
+                text.append(msg["content"])
+                yield ("token", msg["content"])
+            if obj.get("done"):
+                final = obj
+                break
+    except (ConnectionError, OSError, http.client.HTTPException) as e:
+        raise GenerationError(f"Ollama not reachable at {cfg.ollama_host} ({type(e).__name__}: {e}). "
+                              "Start it with `ollama serve`.") from e
+    finally:
+        conn.close()
+    latency = time.perf_counter() - t0
+    yield ("answer", _finish(cfg, model, context, "".join(text), "".join(thinking), final, latency, think))
 
 
 def answer_query(cfg: Config, query: str, mode: str | None = None, rerank: bool | None = None,

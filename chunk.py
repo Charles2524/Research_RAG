@@ -85,7 +85,7 @@ def split_sections(md: str) -> list[Section]:
         h = HEADING.match(raw)
         if h:
             flush()
-            title = " ".join(h.group(2).replace("*", "").split())
+            title = " ".join(re.sub(r"[*_`]+", " ", h.group(2)).split())   # strip markdown emphasis markers
             start_page = page
             offsets = [(0, page)]
             continue

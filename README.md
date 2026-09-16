@@ -80,11 +80,27 @@ metadata by title (Crossref, then OpenAlex) before parsing; unresolved files get
 
 ## UI
 
+The demo interface is the **Reading Room**, a hand-built web UI served locally:
+
+```
+python server.py
+```
+
+then open http://127.0.0.1:8765. Library on the left, conversation in the middle with the answer
+streaming in and inline citation chips, evidence on the right: click a chip to jump to the exact
+passage. Every answer carries its verification line (citation integrity, retrieval and generation
+time, tokens per second). "Add papers" is the one network action and says so. Fonts are self-hosted
+(`ui/fonts/`, OFL); no CDN is contacted. The server binds to 127.0.0.1 only and needs no extra
+dependencies (starlette and uvicorn ship with streamlit). Design decisions are recorded in
+`ui/DESIGN.md`.
+
+The single-page Streamlit app from the SPEC is still available:
+
 ```
 streamlit run app.py
 ```
 
-The **Ask** tab is fully local. The **Discover** tab is the only place that touches the network.
+Its **Ask** tab is fully local; its **Discover** tab is the only place that touches the network.
 
 ## Evaluation and ablation
 
@@ -123,7 +139,7 @@ Notes that matter on this stack:
 
 ```
 config.py models.py sources/ fetch.py parse.py chunk.py index.py retrieve.py generate.py
-evaluate.py ablate.py app.py tests/ config.yaml .env.example requirements.txt SPEC.md CLAUDE.md
+evaluate.py ablate.py app.py server.py ui/ tests/ config.yaml .env.example requirements.txt SPEC.md CLAUDE.md
 data/{pdfs,md,meta,cache,index.db}   results/{runs.csv,eval_set.jsonl,answers_*.jsonl}
 ```
 

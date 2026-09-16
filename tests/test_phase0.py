@@ -113,10 +113,11 @@ def test_peak_rss_is_measurable_and_under_ceiling():
 # ----- models -----
 
 def test_paper_json_roundtrip():
-    p = Paper(paper_id="10.1000/x", title="T", authors=["A B", "C D"], year=2024, doi="10.1000/x",
+    p = Paper(paper_id="10.1000/x", title="T", authors=["Patrick Lewis", "Ethan Perez"], year=2024, doi="10.1000/x",
               source="openalex", status=STATUS_FETCHED, references=["10.1/y"])
     assert Paper.from_json(p.to_json()) == p
-    assert p.citation_label() == "B 2024"
+    assert p.citation_label() == "Lewis 2024"
+    assert Paper("x", "t", authors=["Lewis P"], year=2020).citation_label() == "Lewis 2020"   # surname-first form
     assert p.has_full_text
 
 

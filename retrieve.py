@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import threading
 import time
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")   # pipeline modules never touch the hub (C1)
@@ -22,19 +23,24 @@ from models import Retrieved  # noqa: E402
 log = logging.getLogger(__name__)
 CANDIDATE_MULTIPLIER = 3        # each single-mode list feeding fusion/rerank is k * this
 _RERANKER: dict[str, object] = {}
-_CONN: dict[str, sqlite3.Connection] = {}
+_LOCAL = threading.local()                 # SQLite connections are per thread (the web server serves from a pool)
 
 
 def get_conn(cfg: Config) -> sqlite3.Connection:
+    conns = getattr(_LOCAL, "conns", None)
+    if conns is None:
+        conns = _LOCAL.conns = {}
     key = str(cfg.index_path)
-    if key not in _CONN:
-        _CONN[key] = index.connect(cfg.index_path)
-    index.ensure_index(cfg, _CONN[key])        # re-chunking cascades vectors away; rebuild from cache (cheap check)
-    return _CONN[key]
+    if key not in conns:
+        conns[key] = index.connect(cfg.index_path)
+    index.ensure_index(cfg, conns[key])        # re-chunking cascades vectors away; rebuild from cache (cheap check)
+    return conns[key]
 
 
 def close_conn(cfg: Config) -> None:
-    c = _CONN.pop(str(cfg.index_path), None)
+    """Close this thread's cached connection (other threads reopen lazily)."""
+    conns = getattr(_LOCAL, "conns", {})
+    c = conns.pop(str(cfg.index_path), None)
     if c:
         c.close()
 

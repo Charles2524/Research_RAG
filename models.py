@@ -41,9 +41,12 @@ class Paper:
         return self.status == STATUS_FETCHED
 
     def citation_label(self) -> str:
-        """Short label for citations, e.g. 'Lewis 2020'."""
-        first = self.authors[0].split()[-1] if self.authors else "Unknown"
-        return f"{first} {self.year}" if self.year else first
+        """Short label for citations, e.g. 'Lewis 2020'. Handles 'Patrick Lewis' and 'Lewis P' forms."""
+        if not self.authors:
+            return f"Unknown {self.year}" if self.year else "Unknown"
+        parts = [p for p in self.authors[0].replace(",", " ").split() if p]
+        surname = parts[-1] if len(parts[-1].rstrip(".")) > 2 else parts[0]    # 'Lewis P' -> Lewis
+        return f"{surname} {self.year}" if self.year else surname
 
     def to_dict(self) -> dict:
         return asdict(self)
