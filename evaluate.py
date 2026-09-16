@@ -210,6 +210,8 @@ def _generation_metrics(cfg: Config, items: list[dict], mode: str, use_rerank: b
     import generate
     import retrieve
     generate.ensure_model(cfg, cfg.llm_model)
+    load_s = generate.warm_up(cfg, cfg.llm_model)          # cold load happens here, outside the timed answers
+    log.info("%s loaded in %.1f s", cfg.llm_model, load_s)
     papers = {p.paper_id: p for p in fetch.load_corpus(cfg)}
     integrity, with_cit, tps, gen_lat, out, failures, thinking = [], 0, [], [], [], 0, []
     for it in items:

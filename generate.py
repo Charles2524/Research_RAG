@@ -99,12 +99,26 @@ def resident_mb(cfg: Config, model: str | None = None) -> float:
     return round(total / (1024 * 1024), 1)
 
 
+def warm_up(cfg: Config, model: str, keep_alive: str = "30m") -> float:
+    """Load a model without generating so the (possibly minute-long) cold load is not inside a timed answer."""
+    t0 = time.perf_counter()
+    ollama_call(cfg, "POST", "/api/generate", {"model": model, "prompt": "", "keep_alive": keep_alive,
+                                               "options": {"num_ctx": num_ctx(cfg)}},   # same ctx as generate(): no reload
+                timeout=cfg.llm_timeout_s)
+    return round(time.perf_counter() - t0, 1)
+
+
 def unload_model(cfg: Config, model: str) -> None:
     """Release a model from RAM (sequential load/unload keeps the machine under the ceiling, SPEC 12)."""
     try:
         ollama_call(cfg, "POST", "/api/generate", {"model": model, "keep_alive": 0}, timeout=30)
     except GenerationError as e:
         log.info("unload %s: %s", model, e)
+
+
+def num_ctx(cfg: Config) -> int:
+    """Context window requested from Ollama; identical for warm-up and answers so the model is loaded once."""
+    return max(2048, cfg.token_budget + 1024)
 
 
 # ----- context assembly (SPEC 7.2) -----
@@ -183,7 +197,7 @@ def generate(cfg: Config, query: str, retrieved: Sequence[Retrieved], model: str
     payload = {
         "model": model, "stream": False, "think": think,
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-        "options": {"temperature": 0.0, "num_ctx": max(2048, cfg.token_budget + 1024), "seed": 0,
+        "options": {"temperature": 0.0, "num_ctx": num_ctx(cfg), "seed": 0,
                     "num_predict": cfg.max_tokens},
     }
     t0 = time.perf_counter()
