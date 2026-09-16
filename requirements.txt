@@ -17,3 +17,5 @@ torch==2.14.0
 sentence-transformers==6.0.1
 transformers==5.17.0
 sqlite-vec==0.1.9
+# Phase 8: UI
+streamlit==1.63.0

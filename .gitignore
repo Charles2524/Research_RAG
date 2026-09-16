@@ -7,3 +7,6 @@ __pycache__/
 data/
 results/runs.csv
 *.log
+
+# test artifact (tests/test_ablate.py offline generation run)
+results/answers_offline_gen.jsonl

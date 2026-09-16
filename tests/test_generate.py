@@ -43,6 +43,8 @@ def test_parse_citations_valid_and_invalid():
     assert valid == [1, 2, 3] and invalid == ["S9"]
     assert generate.parse_citations("no citations here", 3) == ([], [])
     assert generate.parse_citations("[2] and [ S3 ]", 3) == ([2, 3], [])
+    assert generate.parse_citations("claim (S2). other (S1, S3) and (2019) and (12)", 3) == ([2, 1, 3], [])
+    assert generate.parse_citations("out of range (S9)", 3) == ([], ["S9"])
 
 
 def test_answer_integrity_counts_out_of_set():

@@ -33,6 +33,9 @@ SYSTEM_PROMPT = (
     "Be concise: two to four sentences. Do not use markdown."
 )
 _TOKENS_IN_BRACKETS = re.compile(r"\[([^\]]{1,40})\]")
+# Small models sometimes write "(S2)" instead of "[S2]"; accept S-prefixed ids in parentheses too
+# (never bare numbers there, which are ordinary prose).
+_PAREN_S_IDS = re.compile(r"\((\s*S\d{1,3}(?:\s*[,;]\s*S\d{1,3})*\s*)\)", re.I)
 # Papers' own in-text reference markers ("[12]", "[3, 7]", "[4-6]") are meaningless without the
 # excised reference list and small models copy them as citations; drop them from source text.
 _REF_MARKERS = re.compile(r"\s?\[\s*\d{1,3}(?:\s*[,;–-]\s*\d{1,3})*\s*\]")
@@ -166,8 +169,10 @@ def parse_citations(text: str, n_sources: int) -> tuple[list[int], list[str]]:
     """Return (valid source indexes 1..n in order of first appearance, raw invalid citation tokens)."""
     valid: list[int] = []
     invalid: list[str] = []
-    for m in _TOKENS_IN_BRACKETS.finditer(text):
-        inner = m.group(1).strip()
+    matches = [(m.start(), m.group(1)) for m in _TOKENS_IN_BRACKETS.finditer(text)]
+    matches += [(m.start(), m.group(1)) for m in _PAREN_S_IDS.finditer(text)]
+    for _, inner in sorted(matches):
+        inner = inner.strip()
         nums = re.findall(r"S?(\d{1,3})", inner, re.I) if re.fullmatch(r"[\sS0-9,;]+", inner, re.I) else []
         if not nums:
             continue
