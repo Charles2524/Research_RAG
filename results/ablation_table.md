@@ -1,14 +1,15 @@
 | run_name | chunk_size_tokens | retrieval_mode | rerank | context_chunks | llm_model | chunk_recall_at_5 | chunk_recall_at_10 | chunk_mrr | recall_at_5 | mrr | citation_integrity | answers_with_citation | gen_failures | tokens_per_s | p50_latency_s | p95_latency_s | gen_p50_latency_s | llm_resident_mb | peak_rss_mb | index_build_s | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ablate_baseline | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0224 | 0.0279 |  |  | 54.8 |  | eval_set n=30 UNVERIFIED 30/30; axis=baseline; retrieval onl |
-| ablate_chunk_256 | 256 | hybrid | False | 5 |  | 0.8 | 0.8667 | 0.5983 | 1.0 | 0.9833 |  |  |  |  | 0.0208 | 0.0255 |  |  | 771.3 | 1.06 | eval_set n=30 UNVERIFIED 30/30; axis=chunk_size; retrieval o |
-| ablate_chunk_1024 | 1024 | hybrid | False | 5 |  | 0.7667 | 0.9333 | 0.6531 | 1.0 | 1.0 |  |  |  |  | 0.0135 | 0.0154 |  |  | 947.0 | 0.98 | eval_set n=30 UNVERIFIED 30/30; axis=chunk_size; retrieval o |
-| ablate_mode_bm25 | 512 | bm25 | False | 5 |  | 0.9333 | 0.9333 | 0.5883 | 1.0 | 0.9667 |  |  |  |  | 0.0135 | 0.0165 |  |  | 947.0 | 1.33 | eval_set n=30 UNVERIFIED 30/30; axis=retrieval_mode; retriev |
-| ablate_mode_dense | 512 | dense | False | 5 |  | 0.7333 | 0.8333 | 0.4584 | 1.0 | 0.95 |  |  |  |  | 0.0084 | 0.0088 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=retrieval_mode; retriev |
-| ablate_rerank_on | 512 | hybrid | True | 5 |  | 0.8667 | 0.9667 | 0.7294 | 1.0 | 1.0 |  |  |  |  | 4.537 | 4.7797 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=rerank; retrieval only |
-| ablate_context_3 | 512 | hybrid | False | 3 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0191 | 0.0236 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=context_chunks; retriev |
-| ablate_context_8 | 512 | hybrid | False | 8 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0189 | 0.0229 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=context_chunks; retriev |
-| ablate_quant_q8 | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0187 | 0.0234 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=quantization; retrieval |
+| ablate_baseline | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0169 | 0.0218 |  |  | 54.4 |  | eval_set n=30 UNVERIFIED 30/30; axis=baseline; retrieval onl |
+| ablate_chunk_256 | 256 | hybrid | False | 5 |  | 0.8 | 0.8667 | 0.5983 | 1.0 | 0.9833 |  |  |  |  | 0.0253 | 0.0318 |  |  | 74.9 | 1.25 | eval_set n=30 UNVERIFIED 30/30; axis=chunk_size; retrieval o |
+| ablate_chunk_1024 | 1024 | hybrid | False | 5 |  | 0.7667 | 0.9333 | 0.6531 | 1.0 | 1.0 |  |  |  |  | 0.0175 | 0.0219 |  |  | 75.9 | 1.0 | eval_set n=30 UNVERIFIED 30/30; axis=chunk_size; retrieval o |
+| ablate_mode_bm25 | 512 | bm25 | False | 5 |  | 0.9333 | 0.9333 | 0.5883 | 1.0 | 0.9667 |  |  |  |  | 0.014 | 0.0173 |  |  | 76.0 | 1.31 | eval_set n=30 UNVERIFIED 30/30; axis=retrieval_mode; retriev |
+| ablate_mode_dense | 512 | dense | False | 5 |  | 0.7333 | 0.8333 | 0.4584 | 1.0 | 0.95 |  |  |  |  | 0.0081 | 0.0089 |  |  | 76.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=retrieval_mode; retriev |
+| ablate_rerank_on | 512 | hybrid | True | 5 |  | 0.8667 | 0.9667 | 0.7294 | 1.0 | 1.0 |  |  |  |  | 4.4927 | 5.5794 |  |  | 773.1 |  | eval_set n=30 UNVERIFIED 30/30; axis=rerank; retrieval only |
+| ablate_context_3 | 512 | hybrid | False | 3 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0214 | 0.0265 |  |  | 773.1 |  | eval_set n=30 UNVERIFIED 30/30; axis=context_chunks; retriev |
+| ablate_context_8 | 512 | hybrid | False | 8 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0215 | 0.0261 |  |  | 773.1 |  | eval_set n=30 UNVERIFIED 30/30; axis=context_chunks; retriev |
+| ablate_model_other | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0253 | 0.0336 |  |  | 773.1 |  | eval_set n=30 UNVERIFIED 30/30; axis=model; retrieval only |
+| ablate_quant_q8 | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.024 | 0.0333 |  |  | 773.1 |  | eval_set n=30 UNVERIFIED 30/30; axis=quantization; retrieval |
 | ablate_model_1.7b | 512 | hybrid | False | 5 |  | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 |  |  |  |  | 0.0188 | 0.0237 |  |  | 947.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=model; retrieval only |
 | ablate_baseline | 512 | hybrid | False | 5 | qwen3:1.7b | 0.8667 | 0.9667 | 0.6615 | 1.0 | 1.0 | 1.0 | 1.0 | 0 | 9.85 | 0.0197 | 0.0251 | 103.3 | 1790.6 | 59.4 |  | eval_set n=30 UNVERIFIED 30/30; axis=baseline; with generati |
 | ablate_chunk_256 | 256 | hybrid | False | 5 | qwen3:1.7b | 0.8 | 0.8667 | 0.5983 | 1.0 | 0.9833 | 1.0 | 1.0 | 0 | 12.22 | 0.0262 | 0.0304 | 49.64 | 1790.6 | 59.0 |  | eval_set n=30 UNVERIFIED 30/30; axis=chunk_size; with genera |
