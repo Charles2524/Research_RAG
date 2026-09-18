@@ -22,10 +22,33 @@ every network client is disabled and the full RAG pipeline works unchanged.
 | RAM | 8 GB baseline | peak measured ~3.9 GB with the 4B model |
 | GPU | none | everything runs on CPU |
 
-## Setup (Command Prompt)
+## Quick setup (one script)
+
+Install [Python 3.12](https://www.python.org/downloads/) (tick "Add python.exe to PATH") and
+[Ollama for Windows](https://ollama.com/download), then in a Command Prompt:
 
 ```
-git clone <this repo> RAG_Research
+git clone https://github.com/Charles2524/Research_RAG.git
+cd Research_RAG
+setup.bat
+```
+
+`setup.bat` creates `.venv`, installs the Python packages (~1 GB, PyTorch), checks the VC++ runtime,
+asks for the contact email the scholarly APIs require, starts Ollama, pulls `qwen3:1.7b` (1.9 GB;
+optionally `qwen3:4b`, 2.5 GB), downloads the embedding and reranking models (~220 MB), runs the phase-0
+checks and puts a **Corpus** shortcut on the desktop. Mostly download time: 10-25 minutes. It is safe
+to run again; finished steps are skipped. If Python, Ollama or the runtime is missing it opens the
+download page and waits.
+
+Afterwards start the app with `run.bat` (or the desktop shortcut): it starts Ollama if needed, serves
+the UI on http://127.0.0.1:8765 and opens your browser. The library starts empty; click **Add Papers**
+to search, download and index open-access papers on any topic, or create a separate corpus per topic
+from the breadcrumb menu.
+
+## Manual setup (Command Prompt)
+
+```
+git clone https://github.com/Charles2524/Research_RAG.git RAG_Research
 cd RAG_Research
 python -m venv .venv
 .venv\Scripts\activate.bat
@@ -40,8 +63,8 @@ drive; `OLLAMA_MODELS` (a user environment variable) does the same for Ollama.
 Pull the language models and start Ollama (leave it running in its own window):
 
 ```
-ollama pull qwen3:4b
 ollama pull qwen3:1.7b
+ollama pull qwen3:4b
 ollama serve
 ```
 
@@ -80,16 +103,18 @@ metadata by title (Crossref, then OpenAlex) before parsing; unresolved files get
 
 ## UI
 
-The demo interface is the **Reading Room**, a hand-built web UI served locally:
+The demo interface is **Corpus**, a web UI served locally with no build step:
 
 ```
-python server.py
+python server.py --open        # or run.bat; --open launches the browser once the port answers
 ```
 
-then open http://127.0.0.1:8765. Library on the left, conversation in the middle with the answer
-streaming in and inline citation chips, evidence on the right: click a chip to jump to the exact
-passage. Every answer carries its verification line (citation integrity, retrieval and generation
-time, tokens per second). "Add papers" is the one network action and says so. Fonts are self-hosted
+Ask & Synthesize streams the answer with inline `[n]` citation badges next to a Retrieved Evidence
+column: click a badge to jump to the exact passage. Every answer carries its metrics strip (citation
+integrity, retrieval and generation time, tokens per second) and an execution trace. Library lists
+every paper with a Paper Inspector; Runs & Traces keeps this session's questions and the pipeline log.
+Each research topic can be its own corpus (folder) and switched from the breadcrumb menu. "Add Papers"
+is the one network action and says so. Fonts are self-hosted
 (`ui/fonts/`, OFL); no CDN is contacted. The server binds to 127.0.0.1 only and needs no extra
 dependencies (starlette and uvicorn ship with streamlit). Design decisions are recorded in
 `ui/DESIGN.md`.

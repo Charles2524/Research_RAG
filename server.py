@@ -392,11 +392,47 @@ app = Starlette(lifespan=_lifespan, routes=[
 ])
 
 
+def _parse_args(argv: list[str]) -> tuple[int, bool]:
+    """``python server.py [port] [--open]`` -> (port, open_browser). run.bat passes both."""
+    port, open_browser = 8765, False
+    for a in argv:
+        if a == "--open":
+            open_browser = True
+        elif a.isdigit():
+            port = int(a)
+        else:
+            raise SystemExit(f"usage: python server.py [port] [--open]  (got {a!r})")
+    return port, open_browser
+
+
+def _open_browser_when_up(port: int, timeout_s: float = 60.0) -> None:
+    """Wait until the loopback port answers, then open the default browser (stdlib only: C1 holds)."""
+    import socket
+    import threading
+    import webbrowser
+
+    def run():
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    break
+            except OSError:
+                time.sleep(0.5)
+        else:
+            return
+        webbrowser.open(f"http://127.0.0.1:{port}/")
+
+    threading.Thread(target=run, name="open-browser", daemon=True).start()
+
+
 if __name__ == "__main__":
     import sys
     import uvicorn
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-    print(f"Local RAG Research Companion UI -> http://127.0.0.1:{port}  (loopback only)")
+    port, open_browser = _parse_args(sys.argv[1:])
+    print(f"Corpus - Local RAG Research Companion -> http://127.0.0.1:{port}  (loopback only)")
+    if open_browser:
+        _open_browser_when_up(port)
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

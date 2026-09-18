@@ -58,6 +58,21 @@ ollama list                     # confirm models present
 
 Every outbound request carries a descriptive user-agent with contact email. Sleep between calls per source. **Cache every response** to `data\cache\` — repeated test runs must not re-hit the network. arXiv needs ~3s between calls; OpenAlex and Crossref want the polite-pool email parameter.
 
+## Files beyond SPEC.md (approved additions)
+
+Read `context.md` first: it maps every file, the API, the corpus folders and the machine-specific facts
+(Ollama GPU fallback after reboot, ports, model speeds).
+
+- `server.py` + `ui/` — the Corpus web UI (static HTML/CSS/JS, no build step) and its local API.
+- `setup.bat` / `run.bat` — one-script installer and launcher for a fresh Windows PC. Keep them in step
+  with `requirements.txt`, `python -m fetch --models` and `server.py --open` (`tests/test_phase0.py` checks).
+- `data_<slug>/` + `.active_corpus` — per-topic corpora created from the UI (gitignored).
+- `report/` — presentation deck generator and outputs. `ui/DESIGN.md` — UI design record.
+- `context.md` — keep it current when files, endpoints or runtime facts change.
+
+Tooling note: the Bash tool's heredocs on this machine mangle backslashes (`\a` becomes a BEL byte); write
+files containing backslashes or regexes with the Write/Edit tools.
+
 ## Reporting
 
 - Report anything unverified as **unverified**. Do not assume a component works because it imports.

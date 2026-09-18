@@ -26,6 +26,14 @@ def test_module_imports_clean(name):
     assert mod is not None
 
 
+def test_setup_scripts_track_the_code():
+    setup = (ROOT / "setup.bat").read_text(encoding="utf-8")
+    run = (ROOT / "run.bat").read_text(encoding="utf-8")
+    assert "requirements.txt" in setup and "-m fetch --models" in setup and "ollama pull qwen3:1.7b" in setup
+    assert "tests\\test_phase0.py" in setup
+    assert "server.py %PORT% --open" in run and "11434" in run
+
+
 def test_every_spec_module_file_exists():
     for name in MODULES:
         p = ROOT / f"{name}.py" if name != "sources" else ROOT / "sources" / "__init__.py"

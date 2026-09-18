@@ -48,6 +48,15 @@ def test_status_and_papers(client):
     assert all("label" in x and x["title"] for x in p)
 
 
+def test_parse_args():
+    assert server._parse_args([]) == (8765, False)
+    assert server._parse_args(["9000"]) == (9000, False)
+    assert server._parse_args(["--open"]) == (8765, True)
+    assert server._parse_args(["9000", "--open"]) == (9000, True)
+    with pytest.raises(SystemExit):
+        server._parse_args(["--bogus"])
+
+
 def test_runs_log(client):
     r = client.get("/api/runs?limit=5").json()
     assert "runs" in r and r["total"] >= len(r["runs"]) and len(r["runs"]) <= 5
