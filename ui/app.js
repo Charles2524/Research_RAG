@@ -48,7 +48,8 @@
     const r = await fetch("/api/status");
     const s = state.status = await r.json();
     const scope = s.fetch_query || "corpus";
-    $("#crumb-scope").textContent = scope;
+    $("#crumb-scope span").textContent = s.corpus_name || scope;
+    $("#idx-name").textContent = s.corpus_name || scope;
     $("#scope-name").textContent = scope;
     $("#scope-count").textContent = `(${num(s.n_papers)} papers indexed)`;
     $("#scope-embed").textContent = `Local embeddings: ${s.embedding_model.split("/").pop()}`;
@@ -67,6 +68,7 @@
     $("#k").value = s.k; $("#ctx").value = s.context_chunks; $("#rerank").checked = !!s.rerank;
     setMode(s.retrieval_mode);
     $("#discover-query").value = s.fetch_query || "";
+    $("#drop-dir").textContent = `${s.corpus}/pdfs`;
     const pill = $("#status-pill");
     if (s.offline) { pill.classList.add("is-offline"); $("#status-pill-text").textContent = "Offline mode · network disabled"; }
     pill.classList.toggle("is-down", s.ollama !== "up"); $("#engine-dot").classList.toggle("dot-ok", s.ollama === "up");
@@ -408,6 +410,50 @@
         || `<tr><td colspan="10" class="dim">No rows in the log yet.</td></tr>`;
     } catch (e) { $("#run-rows").innerHTML = `<tr><td colspan="10" class="dim">Could not read the log: ${esc(e.message)}</td></tr>`; }
   }
+
+  // ---------- corpora ----------
+  for (const id of ["crumb-scope", "open-corpora"]) $(`#${id}`).addEventListener("click", () => { openModal("modal-corpora"); loadCorpora(); });
+  async function loadCorpora() {
+    const list = $("#corpora-list");
+    try {
+      const r = await (await fetch("/api/corpora")).json();
+      renderCorpora(r);
+    } catch (e) { list.innerHTML = `<li class="dim">Could not list corpora: ${esc(e.message)}</li>`; }
+  }
+  function renderCorpora(r) {
+    const list = $("#corpora-list"); list.innerHTML = "";
+    for (const c of r.corpora) {
+      const li = document.createElement("li"); li.className = `corpus ${c.active ? "is-on" : ""}`;
+      li.innerHTML = `
+        <div class="corpus-l"><div class="corpus-name">${esc(c.name)}${c.active ? `<span class="badge mono badge-ok">active</span>` : ""}</div>
+          <div class="corpus-q">${c.query ? `“${esc(c.query)}”` : "<i>no search query set</i>"}</div>
+          <div class="corpus-stats">${c.n_papers} papers · ${c.n_fulltext} full text · ${num(c.n_chunks)} chunks · ${c.index_size_mb} MB · ${esc(c.id)}/</div></div>
+        ${c.active ? `<span class="dim mono" style="font-size:11px">in use</span>` : `<button type="button" class="btn btn-quiet" data-switch="${esc(c.id)}"><svg class="ic"><use href="#i-arrow"/></svg>Switch</button>`}`;
+      list.appendChild(li);
+    }
+  }
+  async function switchCorpus(body) {
+    const res = await fetch("/api/corpus", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await res.json();
+    if (!res.ok) { toast(r.error || res.statusText); return false; }
+    renderCorpora(r);
+    state.selected = null; state.page = 1; state.search = ""; $("#library-filter").value = "";
+    $("#work").hidden = true; state.current = null; state.sources = [];
+    await Promise.all([loadStatus(), loadPapers()]);
+    toast(`Corpus: ${r.corpora.find((c) => c.active)?.name || r.active}`);
+    return true;
+  }
+  $("#corpora-list").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-switch]"); if (!b) return;
+    b.disabled = true; await switchCorpus({ id: b.dataset.switch }); b.disabled = false;
+  });
+  $("#corpus-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("#corpus-create").disabled = true;
+    const ok = await switchCorpus({ name: $("#corpus-name").value, query: $("#corpus-query").value });
+    $("#corpus-create").disabled = false;
+    if (ok) { $("#corpus-name").value = ""; $("#corpus-query").value = ""; closeModals(); openModal("modal-add"); }
+  });
 
   // ---------- discover ----------
   $("#discover-form").addEventListener("submit", async (e) => {

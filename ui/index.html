@@ -63,7 +63,8 @@
   </div>
   <div class="rail-bottom">
     <div class="index-card">
-      <div class="index-head"><span class="eyebrow">Corpus Index</span><svg class="ic ic-muted"><use href="#i-database"/></svg></div>
+      <div class="index-head"><span class="eyebrow">Corpus Index</span><button type="button" class="link mono" id="open-corpora">switch</button></div>
+      <div class="index-name" id="idx-name">…</div>
       <div class="index-big"><span class="index-n" id="idx-papers">…</span><span class="index-label">indexed papers</span></div>
       <dl class="index-rows mono">
         <div><dt>Full text:</dt><dd id="idx-fulltext">…</dd></div>
@@ -78,7 +79,7 @@
 
 <!-- ===== Header ===== -->
 <header class="top" id="top">
-  <div class="crumbs"><svg class="ic ic-muted"><use href="#i-folder"/></svg><span class="crumb-a">Workspace</span><span class="crumb-sep">/</span><span class="crumb-b" id="crumb-scope">…</span></div>
+  <div class="crumbs"><svg class="ic ic-muted"><use href="#i-folder"/></svg><span class="crumb-a">Workspace</span><span class="crumb-sep">/</span><button type="button" class="crumb-b crumb-btn" id="crumb-scope" title="Switch or create a corpus"><span>…</span><svg class="ic"><use href="#i-chevron"/></svg></button></div>
   <div class="top-right">
     <span class="badge mono badge-model" id="hdr-model"><svg class="ic ic-accent"><use href="#i-cpu"/></svg><span>…</span></span>
     <button class="btn btn-primary" type="button" id="open-add"><svg class="ic"><use href="#i-plus"/></svg>Add Papers</button>
@@ -232,13 +233,37 @@
           <label class="limit">Up to <input id="discover-limit" type="number" min="1" max="100" value="10"> papers</label>
         </div>
       </div>
-      <div class="drop" id="drop-note"><svg class="ic ic-muted"><use href="#i-cloud"/></svg><div><b>Local PDFs</b><span class="dim">Drop files into <span class="mono">data/pdfs</span>, then run <span class="mono">python parse.py</span>, <span class="mono">chunk.py</span>, <span class="mono">index.py</span>. The browser never uploads anything.</span></div></div>
+      <div class="drop" id="drop-note"><svg class="ic ic-muted"><use href="#i-cloud"/></svg><div><b>Local PDFs</b><span class="dim">Drop files into <span class="mono" id="drop-dir">data/pdfs</span>, then run <span class="mono">python parse.py</span>, <span class="mono">chunk.py</span>, <span class="mono">index.py</span>. The browser never uploads anything.</span></div></div>
       <ol class="steps" id="discover-steps"></ol>
     </form>
     <footer class="dialog-foot">
       <span class="dim" id="discover-note">Downloads only open-access PDFs. Metadata-only papers are kept for citation.</span>
       <div><button class="btn btn-quiet" type="button" data-close>Close</button><button class="btn btn-primary" type="submit" form="discover-form" id="discover-run"><svg class="ic"><use href="#i-cloud"/></svg>Fetch &amp; Index</button></div>
     </footer>
+  </section>
+</div>
+
+<!-- ===== Corpora modal ===== -->
+<div class="modal" id="modal-corpora" hidden>
+  <div class="scrim" data-close></div>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="corpora-title">
+    <header class="dialog-head">
+      <div><div class="dialog-title-row"><span class="brand-mark sm"><svg class="ic"><use href="#i-layers"/></svg></span><h2 id="corpora-title">Research Corpora</h2></div>
+        <p class="dim">Each corpus is its own folder with its own PDFs, chunks and vector index. Switching changes what every question is answered from. Nothing is deleted or re-downloaded when you switch.</p></div>
+      <button class="btn btn-icon" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <h3 class="eyebrow">Available corpora</h3>
+      <ol class="corpora" id="corpora-list"><li class="skeleton" style="height:64px"></li></ol>
+      <h3 class="eyebrow">New corpus</h3>
+      <form class="panel-box" id="corpus-form">
+        <div class="settings-grid">
+          <label class="field"><span>Name</span><input id="corpus-name" type="text" placeholder="e.g. Medical imaging segmentation" required autocomplete="off"></label>
+          <label class="field"><span>Search query for Add Papers</span><input id="corpus-query" type="text" placeholder="e.g. medical image segmentation deep learning" required autocomplete="off"></label>
+        </div>
+        <div class="corpus-form-foot"><span class="dim" id="corpus-note">Creates an empty folder and switches to it. Then use Add Papers to fill it.</span><button class="btn btn-primary" type="submit" id="corpus-create"><svg class="ic"><use href="#i-plus"/></svg>Create &amp; switch</button></div>
+      </form>
+    </div>
   </section>
 </div>
 

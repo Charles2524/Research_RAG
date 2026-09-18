@@ -37,11 +37,115 @@ UI_DIR = ROOT / "ui"
 _CFG: Config | None = None
 
 
+CORPORA_ROOT = ROOT                              # sibling corpora live in <root>/data_<slug>/ (tests point this at tmp)
+ACTIVE_FILE = ROOT / ".active_corpus"           # remembers the chosen corpus across restarts (gitignored)
+
+
 def cfg() -> Config:
     global _CFG
     if _CFG is None:
-        _CFG = load_config()
+        c = load_config()
+        if ACTIVE_FILE.exists():
+            d = CORPORA_ROOT / ACTIVE_FILE.read_text(encoding="utf-8").strip()
+            if d.is_dir() and d.resolve() != c.data_dir.resolve():
+                c = _corpus_cfg(c, d)
+        _CFG = c
     return _CFG
+
+
+# ----- corpora: one folder per research topic (pdfs, md, meta, cache, index.db) -----
+
+def _slug(name: str) -> str:
+    import re
+    s = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return s[:40] or "corpus"
+
+
+def _corpus_meta(d: Path, default_query: str) -> dict:
+    f = d / "corpus.json"
+    if f.exists():
+        try:
+            return json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    return {"name": d.name if d.name != "data" else "Default corpus", "query": default_query}
+
+
+def _corpus_cfg(base: Config, d: Path) -> Config:
+    meta = _corpus_meta(d, base.fetch_query)
+    c = base.with_overrides(data_dir=d, fetch_query=str(meta.get("query") or base.fetch_query))
+    c.ensure_dirs()
+    return c
+
+
+def _corpus_dirs(base: Config) -> list[Path]:
+    dirs = {base.data_dir.resolve()}
+    for d in CORPORA_ROOT.glob("data_*"):
+        if d.is_dir():
+            dirs.add(d.resolve())
+    return sorted(dirs, key=lambda p: (p.resolve() != base.data_dir.resolve(), p.name))
+
+
+def _corpora_payload() -> dict:
+    base = load_config()
+    active = cfg().data_dir.resolve()
+    out = []
+    for d in _corpus_dirs(base):
+        meta = _corpus_meta(d, base.fetch_query)
+        n_papers = n_fulltext = n_chunks = 0
+        meta_dir = d / "meta"
+        if meta_dir.is_dir():
+            for f in meta_dir.glob("*.json"):
+                n_papers += 1
+                try:
+                    if json.loads(f.read_text(encoding="utf-8"))["paper"].get("status") == "fetched":
+                        n_fulltext += 1
+                except (OSError, ValueError, KeyError):
+                    pass
+        db = d / "index.db"
+        if db.exists():
+            conn = index.connect(db)
+            try:
+                n_chunks = index.count_chunks(conn)
+            finally:
+                conn.close()
+        out.append({"id": d.name, "name": meta.get("name") or d.name, "query": meta.get("query") or "",
+                    "created": meta.get("created"), "n_papers": n_papers, "n_fulltext": n_fulltext, "n_chunks": n_chunks,
+                    "index_size_mb": round(db.stat().st_size / 1e6, 2) if db.exists() else 0.0,
+                    "active": d.resolve() == active})
+    return {"active": cfg().data_dir.name, "corpora": out}
+
+
+def corpora(request: Request) -> JSONResponse:
+    return JSONResponse(_corpora_payload())
+
+
+async def switch_corpus(request: Request) -> JSONResponse:
+    """Create (if new) and activate a corpus folder. Body: {"id": "data_x"} to switch, or {"name", "query"} to create."""
+    global _CFG
+    body = await request.json()
+    base = load_config()
+    if body.get("id"):
+        d = CORPORA_ROOT / str(body["id"])
+        if d.name == base.data_dir.name:
+            d = base.data_dir
+        if not d.is_dir() or (d.resolve() != base.data_dir.resolve() and not d.name.startswith("data_")):
+            return JSONResponse({"error": f"no such corpus: {body['id']}"}, status_code=404)
+    else:
+        name = (body.get("name") or "").strip()
+        query = (body.get("query") or "").strip()
+        if not name or not query:
+            return JSONResponse({"error": "name and query are required"}, status_code=400)
+        d = CORPORA_ROOT / f"data_{_slug(name)}"
+        if d.exists():
+            return JSONResponse({"error": f"a corpus folder named {d.name} already exists"}, status_code=409)
+        d.mkdir(parents=True)
+        (d / "corpus.json").write_text(json.dumps({"name": name, "query": query, "created": time.strftime("%Y-%m-%d")},
+                                                  indent=2), encoding="utf-8")
+    _CFG = _corpus_cfg(base, d)
+    ACTIVE_FILE.write_text(d.name, encoding="utf-8")
+    log.info("corpus -> %s (%s)", d.name, _CFG.fetch_query)
+    return JSONResponse(_corpora_payload())
 
 
 def _sse(obj: dict) -> str:
@@ -77,6 +181,7 @@ def status(request: Request) -> JSONResponse:      # sync: runs on the thread po
         "index_size_mb": stats["index_size_mb"], "embedding_model": c.embedding_model,
         "contact_email_set": bool(c.contact_email), "modes": list(RETRIEVAL_MODES),
         "chunks_per_paper": per_paper, "fetch_query": c.fetch_query,
+        "corpus": c.data_dir.name, "corpus_name": _corpus_meta(c.data_dir, c.fetch_query).get("name"),
     })
 
 
@@ -278,6 +383,8 @@ app = Starlette(lifespan=_lifespan, routes=[
     Route("/api/status", status),
     Route("/api/papers", papers),
     Route("/api/runs", runs),
+    Route("/api/corpora", corpora),
+    Route("/api/corpus", switch_corpus, methods=["POST"]),
     Route("/api/chunk/{chunk_id:path}", chunk_by_id),
     Route("/api/ask", ask, methods=["POST"]),
     Route("/api/discover", discover, methods=["POST"]),

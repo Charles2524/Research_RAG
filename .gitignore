@@ -10,3 +10,7 @@ results/runs.csv
 
 # test artifact (tests/test_ablate.py offline generation run)
 results/answers_offline_gen.jsonl
+
+# per-topic corpora created from the UI, and the remembered active one
+data_*/
+.active_corpus

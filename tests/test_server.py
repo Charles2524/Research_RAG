@@ -55,6 +55,34 @@ def test_runs_log(client):
     assert client.get("/api/runs?limit=0").json()["runs"] == client.get("/api/runs?limit=1").json()["runs"]
 
 
+def test_corpora_create_switch_and_back(tmp_path, monkeypatch):
+    monkeypatch.setattr(server, "CORPORA_ROOT", tmp_path)
+    monkeypatch.setattr(server, "ACTIVE_FILE", tmp_path / ".active_corpus")
+    server._CFG = None
+    try:
+        with TestClient(server.app) as c:
+            before = c.get("/api/corpora").json()
+            assert before["active"] == "data" and before["corpora"][0]["active"] and before["corpora"][0]["n_papers"] >= 20
+            assert c.post("/api/corpus", json={"name": "", "query": "x"}).status_code == 400
+            assert c.post("/api/corpus", json={"id": "data_nope"}).status_code == 404
+            r = c.post("/api/corpus", json={"name": "Medical Imaging!", "query": "medical image segmentation"})
+            assert r.status_code == 200 and r.json()["active"] == "data_medical-imaging"
+            new = next(x for x in r.json()["corpora"] if x["active"])
+            assert new["name"] == "Medical Imaging!" and new["n_papers"] == 0 and new["n_chunks"] == 0
+            assert (tmp_path / "data_medical-imaging" / "corpus.json").exists() and (tmp_path / "data_medical-imaging" / "pdfs").is_dir()
+            s = c.get("/api/status").json()
+            assert s["corpus"] == "data_medical-imaging" and s["fetch_query"] == "medical image segmentation" and s["n_papers"] == 0
+            assert c.get("/api/papers").json()["papers"] == []
+            assert c.post("/api/corpus", json={"name": "medical imaging", "query": "y"}).status_code == 409   # same slug
+            # remembered across a restart of the server process
+            server._CFG = None
+            assert c.get("/api/status").json()["corpus"] == "data_medical-imaging"
+            back = c.post("/api/corpus", json={"id": "data"}).json()
+            assert back["active"] == "data" and c.get("/api/status").json()["n_papers"] >= 20
+    finally:
+        server._CFG = None
+
+
 def test_chunk_lookup(client):
     p = next(x for x in client.get("/api/papers").json()["papers"] if x["has_full_text"])
     from urllib.parse import quote

@@ -58,3 +58,12 @@ the real numbers from the answer; an answer with no citations is labelled as suc
 - Copy Markdown (answer + numbered sources + metrics) and Copy raw JSON (question, config, sources, answer).
 - Runs view reopens any earlier answer from this session without re-querying the model.
 - If Ollama is down the pill says so and the page re-polls every 10 s.
+
+## Corpora (added after the first release)
+
+A corpus is one folder: `data/` (the default from `config.yaml`) or `data_<slug>/` for topics created from the UI,
+each with its own `pdfs`, `md`, `meta`, `cache`, `index.db` and a `corpus.json` (name, query, created). The breadcrumb
+in the header and the "switch" link on the index card open the Research Corpora modal: list with paper/chunk counts,
+Switch, and a New corpus form (name + Add Papers query) that creates the folder, switches to it and opens Add Papers.
+`/api/corpora` lists, `POST /api/corpus` switches or creates; the active corpus is remembered in `.active_corpus`
+(gitignored) so a restart comes back to it. Switching swaps the server config in place: no restart, no re-download.
