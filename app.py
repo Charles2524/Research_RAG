@@ -26,7 +26,23 @@ log = logging.getLogger(__name__)
 
 @st.cache_resource
 def get_cfg():
-    return load_config()
+    cfg = load_config()
+    _warm_up(cfg)                 # once per process: embedder + fast model, so the first question is not the slow one
+    return cfg
+
+
+def _warm_up(cfg) -> None:
+    import uuid
+    try:
+        conn = retrieve.get_conn(cfg)
+        if index.count_chunks(conn):
+            index.embed_texts(cfg, conn, [f"warm-up {uuid.uuid4().hex}"])
+    except Exception as e:                       # never block the page on a warm-up
+        log.warning("embedder warm-up skipped: %s", e)
+    try:
+        generate.warm_up(cfg, cfg.llm_fallback_model, keep_alive="2h")
+    except generate.GenerationError as e:
+        log.warning("model warm-up skipped: %s", e)
 
 
 def corpus_status(cfg) -> dict:
@@ -48,7 +64,8 @@ def render_ask(cfg):
     col1, col2, col3, col4 = st.columns(4)
     mode = col1.selectbox("Retrieval", RETRIEVAL_MODES, index=RETRIEVAL_MODES.index(cfg.retrieval_mode))
     rerank = col2.checkbox("Rerank (cross-encoder, ~4 s)", value=cfg.rerank)
-    model = col3.selectbox("Model", [cfg.llm_model, cfg.llm_fallback_model], index=0)
+    model = col3.selectbox("Model", [cfg.llm_fallback_model, cfg.llm_model], index=0,      # fast model first for demos
+                           format_func=lambda m: f"{m}  (fast)" if m == cfg.llm_fallback_model else f"{m}  (reasons first, slow)")
     k = col4.slider("Chunks retrieved", 3, 20, cfg.k)
     if st.button("Answer", type="primary", disabled=not q.strip()):
         t0 = time.perf_counter()

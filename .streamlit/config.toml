@@ -1,0 +1,6 @@
+[server]
+fileWatcherType = "none"      # no reruns on file edits, no module-watcher noise from torch during a demo
+headless = true
+
+[browser]
+gatherUsageStats = false
