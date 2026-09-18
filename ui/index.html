@@ -4,114 +4,278 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Reading Room</title>
+<title>Corpus · Local-First Research Engine</title>
 <link rel="stylesheet" href="/ui/fonts/fonts.css">
 <link rel="stylesheet" href="/ui/app.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></symbol>
-    <symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c2.2 2 2.2 10 0 12M8 2c-2.2 2-2.2 10 0 12"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
-    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
-    <symbol id="i-chev" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></symbol>
-    <symbol id="i-send" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></symbol>
-    <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
-    <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 2h5l3 3v9H4z"/><path d="M9 2v3h3M6 8h4M6 11h4"/></symbol>
-    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.9 2.7a1 1 0 0 1 1.9 0l1.3 3.9a1 1 0 0 0 .6.6l3.9 1.3a1 1 0 0 1 0 1.9l-3.9 1.3a1 1 0 0 0-.6.6l-1.3 3.9a1 1 0 0 1-1.9 0l-1.3-3.9a1 1 0 0 0-.6-.6L4.1 10.4a1 1 0 0 1 0-1.9l3.9-1.3a1 1 0 0 0 .6-.6z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1 1 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.8l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.2a2 2 0 0 1 1 1.7V20a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.8l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.2a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-4M17 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3"/><path d="M14 2v4M10 10v4M16 18v4"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.7 2.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.8V6a2 2 0 0 1 4 0v4.8a2 2 0 0 0 .6 1.4l2.4 2.4V17H8v-2.4l2.4-2.4a2 2 0 0 0 .6-1.4z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M12 13v8"/><path d="m8 17 4-4 4 4"/><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.8 2.2 8.6 4.3a1 1 0 0 1 0 1.8l-8.6 4.3a2 2 0 0 1-1.7 0L2.6 8.3a1 1 0 0 1 0-1.8l8.6-4.3a2 2 0 0 1 1.7 0z"/><path d="m22 12-9.4 4.7a2 2 0 0 1-1.7 0L2 12"/><path d="m22 17-9.4 4.7a2 2 0 0 1-1.7 0L2 17"/></symbol>
   </defs>
 </svg>
 
-<header class="top">
-  <div class="brand">
-    <span class="brand-mark" aria-hidden="true"></span>
-    <span class="brand-name">Reading Room</span>
-    <span class="brand-sub" id="corpus-line">Loading corpus…</span>
-  </div>
-  <div class="top-right">
-    <span class="pill pill-local" id="privacy-pill" title="Retrieval and generation run on this machine. Paper text never leaves it.">
-      <svg class="ic"><use href="#i-lock"/></svg><span id="privacy-text">Local · nothing leaves this machine</span>
-    </span>
-    <button class="btn btn-quiet" id="open-discover" type="button">
-      <svg class="ic"><use href="#i-plus"/></svg>Add papers
+<!-- ===== Left rail ===== -->
+<aside class="rail" id="rail">
+  <div class="rail-top">
+    <button class="brand" type="button" data-tab="ask">
+      <span class="brand-mark"><svg class="ic"><use href="#i-book"/></svg></span>
+      <span class="brand-text">
+        <span class="brand-name">Corpus <span class="brand-ver mono" id="brand-ver">local</span></span>
+        <span class="brand-sub">Local-First Research Engine</span>
+      </span>
     </button>
+    <nav class="nav" aria-label="Views">
+      <button type="button" class="nav-item" data-tab="library"><span><svg class="ic"><use href="#i-library"/></svg>Library</span><span class="nav-badge mono" id="nav-papers">…</span></button>
+      <button type="button" class="nav-item is-on" data-tab="ask"><span><svg class="ic ic-accent"><use href="#i-sparkles"/></svg>Ask &amp; Synthesize</span><span class="pulse" id="nav-live" hidden></span></button>
+      <button type="button" class="nav-item" data-tab="runs"><span><svg class="ic"><use href="#i-terminal"/></svg>Runs &amp; Traces</span><span class="nav-badge mono" id="nav-runs"></span></button>
+    </nav>
+  </div>
+  <div class="rail-bottom">
+    <div class="index-card">
+      <div class="index-head"><span class="eyebrow">Corpus Index</span><svg class="ic ic-muted"><use href="#i-database"/></svg></div>
+      <div class="index-big"><span class="index-n" id="idx-papers">…</span><span class="index-label">indexed papers</span></div>
+      <dl class="index-rows mono">
+        <div><dt>Full text:</dt><dd id="idx-fulltext">…</dd></div>
+        <div><dt>Dense chunks:</dt><dd id="idx-chunks">…</dd></div>
+        <div><dt>Vector storage:</dt><dd id="idx-storage">…</dd></div>
+        <div class="dim"><dt>Backend:</dt><dd id="idx-backend">…</dd></div>
+      </dl>
+    </div>
+    <div class="status-pill" id="status-pill"><span class="pulse"></span><span id="status-pill-text">Local model · nothing leaves this machine</span><svg class="ic ic-ok"><use href="#i-shield"/></svg></div>
+  </div>
+</aside>
+
+<!-- ===== Header ===== -->
+<header class="top" id="top">
+  <div class="crumbs"><svg class="ic ic-muted"><use href="#i-folder"/></svg><span class="crumb-a">Workspace</span><span class="crumb-sep">/</span><span class="crumb-b" id="crumb-scope">…</span></div>
+  <div class="top-right">
+    <span class="badge mono badge-model" id="hdr-model"><svg class="ic ic-accent"><use href="#i-cpu"/></svg><span>…</span></span>
+    <button class="btn btn-primary" type="button" id="open-add"><svg class="ic"><use href="#i-plus"/></svg>Add Papers</button>
+    <div class="theme-seg" role="radiogroup" aria-label="Theme">
+      <button type="button" data-theme="light" title="Light scholarly theme" aria-checked="true"><svg class="ic"><use href="#i-sun"/></svg></button>
+      <button type="button" data-theme="dark" title="Monastic dark theme" aria-checked="false"><svg class="ic"><use href="#i-moon"/></svg></button>
+    </div>
+    <button class="btn btn-icon" type="button" id="open-settings" title="Engine settings"><svg class="ic"><use href="#i-settings"/></svg></button>
+    <span class="avatar"><svg class="ic"><use href="#i-user"/></svg></span>
   </div>
 </header>
 
-<nav class="switch" id="mobile-switch" aria-label="Panels">
-  <button type="button" data-panel="library">Library</button>
-  <button type="button" data-panel="ask" class="is-on">Ask</button>
-  <button type="button" data-panel="evidence">Evidence</button>
-</nav>
+<main class="stage">
 
-<main class="room">
-  <aside class="panel library" id="panel-library" aria-label="Library">
-    <div class="panel-head">
-      <h2>Library <span class="count" id="library-count"></span></h2>
-      <label class="field field-search">
-        <svg class="ic"><use href="#i-search"/></svg>
-        <input id="library-filter" type="search" placeholder="Filter by title, author, year" autocomplete="off">
-      </label>
+  <!-- ===== Ask view ===== -->
+  <section class="view is-on" id="view-ask">
+    <div class="scope-row">
+      <div class="scope-left"><span class="chip-label">Corpus Scope</span><span class="scope-name" id="scope-name">…</span><span class="scope-count" id="scope-count"></span></div>
+      <div class="scope-right"><span class="badge mono"><span class="dot dot-ok"></span><span id="scope-embed">Local embeddings</span></span><button class="btn btn-icon btn-sm" type="button" id="open-settings-2" title="Configure engine parameters"><svg class="ic"><use href="#i-sliders"/></svg></button></div>
     </div>
-    <ol class="paper-list" id="paper-list"><li class="skeleton"></li><li class="skeleton"></li><li class="skeleton"></li></ol>
-  </aside>
 
-  <section class="panel conversation" id="panel-ask" aria-label="Conversation">
-    <div class="thread" id="thread">
-      <div class="empty" id="empty-state">
-        <p class="empty-title">Ask something the papers can answer.</p>
-        <p class="empty-body">Every sentence in the answer ends with a source marker. Click one to read the exact passage on the right.</p>
-        <div class="empty-examples" id="examples">
-          <button type="button" class="example">What are the two main components of retrieval-augmented generation, and how do they interact?</button>
-          <button type="button" class="example">Which pre-trained models supply the retriever and the generator in the original RAG formulation?</button>
-          <button type="button" class="example">Which model does CRAG fine-tune as its retrieval evaluator?</button>
+    <div class="ask-wrap">
+      <form class="ask-box" id="composer">
+        <svg class="ic ic-accent ask-spark"><use href="#i-sparkles"/></svg>
+        <textarea id="question" rows="2" placeholder="Ask a question about your corpus…" autocomplete="off"></textarea>
+        <div class="ask-actions">
+          <span class="kbd mono">Enter <span>to run</span></span>
+          <button class="btn btn-primary" type="submit" id="send" disabled><span id="send-label">Synthesize</span><svg class="ic"><use href="#i-arrow"/></svg></button>
         </div>
+      </form>
+      <div class="ask-meta">
+        <div class="ask-meta-left">
+          <span><span class="dot dot-ok" id="engine-dot"></span>Engine: <b id="meta-engine">…</b> (local CPU)</span><span class="sep">•</span>
+          <span>Top-k: <b id="meta-k">…</b> chunks</span><span class="sep">•</span>
+          <span>Retrieval: <b id="meta-mode">…</b></span><span class="sep">•</span>
+          <span>Reranker: <b id="meta-rerank">…</b></span>
+        </div>
+        <button type="button" class="link mono" id="meta-run" data-tab="runs"><svg class="ic"><use href="#i-history"/></svg><span>No runs yet</span></button>
+      </div>
+      <div class="examples" id="examples">
+        <button type="button" class="example">What are the two main components of retrieval-augmented generation, and how do they interact?</button>
+        <button type="button" class="example">Which pre-trained models supply the retriever and the generator in the original RAG formulation?</button>
+        <button type="button" class="example">Which model does CRAG fine-tune as its retrieval evaluator?</button>
       </div>
     </div>
-    <form class="composer" id="composer">
-      <label class="visually-hidden" for="question">Question</label>
-      <textarea id="question" rows="2" placeholder="Ask the corpus…" autocomplete="off"></textarea>
-      <div class="composer-row">
-        <div class="seg" role="radiogroup" aria-label="Retrieval" id="mode-seg">
-          <button type="button" role="radio" data-mode="bm25">Keyword</button>
-          <button type="button" role="radio" data-mode="dense">Semantic</button>
-          <button type="button" role="radio" data-mode="hybrid" aria-checked="true" class="is-on">Hybrid</button>
-        </div>
-        <label class="toggle"><input type="checkbox" id="rerank"><span>Rerank</span></label>
-        <label class="field field-inline"><span>Model</span><select id="model"></select></label>
-        <label class="field field-inline"><span>Passages</span><input type="number" id="k" min="3" max="20" value="10"></label>
-        <button class="btn btn-primary" id="send" type="submit" disabled>
-          Answer<svg class="ic"><use href="#i-send"/></svg>
-        </button>
+
+    <div class="work" id="work" hidden>
+      <div class="work-main">
+        <article class="card synth" id="synth">
+          <div class="synth-head">
+            <div class="synth-status">
+              <span class="dot" id="synth-dot"></span><span class="eyebrow" id="synth-state">Retrieving</span><span class="sep">•</span><span class="mono dim" id="synth-model"></span>
+              <span class="synth-tools"><button class="btn btn-icon btn-sm" type="button" id="copy-md" title="Copy answer as Markdown"><svg class="ic"><use href="#i-copy"/></svg></button><button class="btn btn-icon btn-sm" type="button" id="rerun" title="Run the question again"><svg class="ic"><use href="#i-rotate"/></svg></button></span>
+            </div>
+            <h1 class="synth-title" id="synth-title"></h1>
+          </div>
+          <details class="thinking" id="thinking" hidden><summary>Reasoning <span class="mono dim" id="thinking-count"></span></summary><pre id="thinking-text"></pre></details>
+          <div class="prose" id="answer"><p class="placeholder" id="answer-wait"><span class="spinner"></span>Retrieving passages…</p></div>
+          <div class="error" id="answer-error" hidden></div>
+          <div class="metrics mono" id="metrics" hidden></div>
+          <div class="synth-actions" id="synth-actions" hidden>
+            <button class="btn btn-quiet" type="button" id="copy-md-2"><svg class="ic"><use href="#i-copy"/></svg><span>Copy Markdown with sources</span></button>
+            <button class="btn btn-quiet" type="button" id="copy-json"><svg class="ic"><use href="#i-terminal"/></svg><span>Copy raw JSON</span></button>
+          </div>
+        </article>
+
+        <details class="card trace" id="trace">
+          <summary><span><svg class="ic ic-accent"><use href="#i-terminal"/></svg>Execution Trace &amp; Retrieval Logic</span><span class="mono dim" id="trace-sub"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <ol class="trace-lines mono" id="trace-lines"></ol>
+        </details>
       </div>
-      <p class="composer-note" id="composer-note">Enter sends · Shift+Enter for a new line</p>
-    </form>
+
+      <aside class="work-side" id="evidence">
+        <div class="side-head"><span><svg class="ic ic-accent"><use href="#i-file"/></svg><h2>Retrieved Evidence</h2></span><span class="badge mono" id="evidence-count"></span></div>
+        <ol class="evidence-list" id="source-list"></ol>
+        <div class="side-foot" id="evidence-foot" hidden><span><svg class="ic ic-accent"><use href="#i-sliders"/></svg><span id="evidence-foot-text"></span></span><button type="button" class="link mono" id="open-settings-3">Adjust</button></div>
+      </aside>
+    </div>
   </section>
 
-  <aside class="panel evidence" id="panel-evidence" aria-label="Evidence">
-    <div class="panel-head">
-      <h2>Evidence <span class="count" id="evidence-count"></span></h2>
-      <p class="panel-sub" id="evidence-sub">Passages retrieved for the current answer appear here.</p>
+  <!-- ===== Library view ===== -->
+  <section class="view" id="view-library" hidden>
+    <div class="view-head">
+      <div><h1 class="page-title">Corpus Library <span class="badge mono" id="lib-badge">local index</span></h1><p class="page-sub" id="lib-sub">…</p></div>
+      <button class="btn btn-primary" type="button" id="open-add-2"><svg class="ic"><use href="#i-plus"/></svg>Import Literature</button>
     </div>
-    <ol class="source-list" id="source-list"></ol>
-  </aside>
+    <div class="toolbar">
+      <label class="search"><svg class="ic"><use href="#i-search"/></svg><input id="library-filter" type="search" placeholder="Filter papers by title, author, venue or DOI…" autocomplete="off"></label>
+      <div class="chips" id="lib-filters"><span class="chip-label">Filter:</span>
+        <button type="button" class="chip is-on" data-filter="all">All</button>
+        <button type="button" class="chip" data-filter="pdf">Full-text PDF</button>
+        <button type="button" class="chip" data-filter="meta">Metadata only</button>
+        <button type="button" class="chip" data-filter="recent">2024 and later</button>
+      </div>
+    </div>
+    <div class="lib-grid">
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="papers">
+            <thead><tr><th class="c">#</th><th>Title &amp; Reference</th><th>Venue &amp; Year</th><th class="c">Chunks</th><th class="c">Embeddings</th><th class="r">Actions</th></tr></thead>
+            <tbody id="paper-rows"></tbody>
+          </table>
+        </div>
+        <div class="table-foot mono"><span id="page-info"></span><div class="pager" id="pager"></div></div>
+      </div>
+      <aside class="card inspector" id="inspector">
+        <div class="side-head"><span><svg class="ic ic-accent"><use href="#i-bookmark"/></svg><h2>Paper Inspector</h2></span><span class="badge mono badge-ok" id="insp-state"></span></div>
+        <div class="insp-body" id="insp-body"><p class="dim">Select a paper to inspect it.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===== Runs view ===== -->
+  <section class="view" id="view-runs" hidden>
+    <div class="view-head">
+      <div><h1 class="page-title">Synthesis Runs &amp; Execution Traces <span class="badge mono">audit log</span></h1><p class="page-sub">Every question asked in this session, then the metrics log every phase of the pipeline writes to <span class="mono" id="runs-path">results/runs.csv</span>.</p></div>
+    </div>
+    <h2 class="section-title">This session</h2>
+    <ol class="runs" id="session-runs"><li class="empty dim">Nothing asked yet. Runs appear here as soon as you synthesize an answer.</li></ol>
+    <h2 class="section-title">Pipeline log <span class="dim mono" id="runs-total"></span></h2>
+    <div class="card table-card">
+      <div class="table-scroll">
+        <table class="runs-table mono">
+          <thead><tr><th>When</th><th>Phase</th><th>Run</th><th>Retrieval</th><th>Model</th><th class="r">Recall@5</th><th class="r">MRR</th><th class="r">Integrity</th><th class="r">p50 latency</th><th class="r">Peak RSS</th></tr></thead>
+          <tbody id="run-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </main>
 
-<div class="drawer" id="discover" hidden>
-  <div class="drawer-scrim" data-close></div>
-  <section class="drawer-panel" role="dialog" aria-labelledby="discover-title" aria-modal="true">
-    <header class="drawer-head">
-      <h2 id="discover-title"><svg class="ic"><use href="#i-globe"/></svg>Add papers from the web</h2>
-      <button class="btn btn-icon" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+<!-- ===== Add papers modal ===== -->
+<div class="modal" id="modal-add" hidden>
+  <div class="scrim" data-close></div>
+  <section class="dialog dialog-lg" role="dialog" aria-modal="true" aria-labelledby="add-title">
+    <header class="dialog-head">
+      <div><div class="dialog-title-row"><span class="brand-mark sm"><svg class="ic"><use href="#i-library"/></svg></span><h2 id="add-title">Add Papers to Corpus</h2></div>
+        <p class="dim">Discover literature across OpenAlex, arXiv, Europe PMC and PubMed, download the open-access PDFs, then parse, chunk and embed them here. This is the only action that uses the network. Paper text, chunks and answers never leave this machine.</p></div>
+      <button class="btn btn-icon" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
     </header>
-    <p class="drawer-copy">This is the one action that uses the network. Your search terms go to OpenAlex, arXiv, Europe PMC and PubMed. Open-access PDFs are downloaded, parsed and indexed here. Paper text, chunks and answers never leave this machine.</p>
-    <form id="discover-form" class="drawer-form">
-      <label class="field"><span>Search terms</span><input id="discover-query" type="text" value="retrieval-augmented generation" required></label>
-      <label class="field field-inline"><span>Up to</span><input id="discover-limit" type="number" min="1" max="100" value="10"><span>papers</span></label>
-      <button class="btn btn-primary" id="discover-run" type="submit">Discover and index</button>
+    <form class="dialog-body" id="discover-form">
+      <div class="panel-box">
+        <label class="search search-lg"><svg class="ic"><use href="#i-search"/></svg><input id="discover-query" type="text" required autocomplete="off"><span class="kbd mono">Enter ↵</span></label>
+        <div class="src-row">
+          <span class="dim">Sources:</span>
+          <span class="src"><svg class="ic ic-ok"><use href="#i-check-circle"/></svg>OpenAlex</span>
+          <span class="src"><svg class="ic ic-ok"><use href="#i-check-circle"/></svg>arXiv</span>
+          <span class="src"><svg class="ic ic-ok"><use href="#i-check-circle"/></svg>Europe PMC</span>
+          <span class="src"><svg class="ic ic-ok"><use href="#i-check-circle"/></svg>PubMed</span>
+          <span class="src dim" id="src-keyed">Semantic Scholar · CORE (need API keys)</span>
+          <label class="limit">Up to <input id="discover-limit" type="number" min="1" max="100" value="10"> papers</label>
+        </div>
+      </div>
+      <div class="drop" id="drop-note"><svg class="ic ic-muted"><use href="#i-cloud"/></svg><div><b>Local PDFs</b><span class="dim">Drop files into <span class="mono">data/pdfs</span>, then run <span class="mono">python parse.py</span>, <span class="mono">chunk.py</span>, <span class="mono">index.py</span>. The browser never uploads anything.</span></div></div>
+      <ol class="steps" id="discover-steps"></ol>
     </form>
-    <ol class="steps" id="discover-steps"></ol>
+    <footer class="dialog-foot">
+      <span class="dim" id="discover-note">Downloads only open-access PDFs. Metadata-only papers are kept for citation.</span>
+      <div><button class="btn btn-quiet" type="button" data-close>Close</button><button class="btn btn-primary" type="submit" form="discover-form" id="discover-run"><svg class="ic"><use href="#i-cloud"/></svg>Fetch &amp; Index</button></div>
+    </footer>
+  </section>
+</div>
+
+<!-- ===== Settings modal ===== -->
+<div class="modal" id="modal-settings" hidden>
+  <div class="scrim" data-close></div>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <header class="dialog-head">
+      <div><div class="dialog-title-row"><span class="brand-mark sm"><svg class="ic"><use href="#i-sliders"/></svg></span><h2 id="settings-title">Corpus Engine Settings</h2></div><p class="dim">Configure local LLM inference, retrieval parameters and the visual theme. Everything applies to the next question.</p></div>
+      <button class="btn btn-icon" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <h3 class="eyebrow">Appearance &amp; Theme</h3>
+      <div class="theme-cards" id="theme-cards">
+        <button type="button" class="theme-card is-on" data-theme="light"><span class="swatch swatch-light"></span><b>Light Scholarly</b><span class="dim">Paper canvas, navy accent</span></button>
+        <button type="button" class="theme-card" data-theme="dark"><span class="swatch swatch-dark"></span><b>Monastic Dark</b><span class="dim">Near-black, cyan glow</span></button>
+      </div>
+      <h3 class="eyebrow">Local Inference</h3>
+      <div class="settings-grid">
+        <label class="field"><span>Model (Ollama, loopback only)</span><select id="model"></select></label>
+        <label class="field"><span>Chunks sent to the model</span><input type="number" id="ctx" min="1" max="20" value="5"></label>
+      </div>
+      <h3 class="eyebrow">Retrieval</h3>
+      <div class="settings-grid">
+        <div class="field"><span>Mode</span>
+          <div class="seg" role="radiogroup" id="mode-seg">
+            <button type="button" role="radio" data-mode="bm25">BM25</button>
+            <button type="button" role="radio" data-mode="dense">Dense</button>
+            <button type="button" role="radio" data-mode="hybrid" class="is-on" aria-checked="true">Hybrid</button>
+          </div></div>
+        <label class="field"><span>Top-k candidates</span><input type="number" id="k" min="3" max="30" value="10"></label>
+        <label class="field field-check"><input type="checkbox" id="rerank"><span>Cross-encoder rerank <span class="dim">(ms-marco MiniLM, adds a few seconds)</span></span></label>
+      </div>
+      <h3 class="eyebrow">Engine</h3>
+      <dl class="kv mono" id="settings-kv"></dl>
+    </div>
+    <footer class="dialog-foot"><span class="dim">Defaults come from <span class="mono">config.yaml</span>.</span><button class="btn btn-primary" type="button" data-close>Done</button></footer>
   </section>
 </div>
 

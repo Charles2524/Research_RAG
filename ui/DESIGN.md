@@ -1,64 +1,60 @@
-# Reading Room — visual system for the web UI
+# Corpus — visual system for the web UI
 
-Recorded per the Impeccable new-work flow (world committed 2026-09-16). Mode: **Operate**.
-Audience: researchers using the tool daily, on a laptop, close up. The tool disappears into the task:
-ask, read, verify a claim against its passage, move on.
+The page in `ui/` recreates the "Corpus · Local-First Research Engine" design (an AI Studio React/Tailwind
+mockup supplied as `corpus-research-engine.zip`) on the project's own stack: static HTML, CSS and vanilla JS
+served by `server.py`. No Node, no build step, no CDN. Everything on screen comes from the local API;
+nothing is hardcoded copy.
 
-## World: the reading room
+## Layout (from the reference)
 
-A warm paper ground with ink text. Not a chat app, not a SaaS dashboard: a desk with the corpus
-on the left, the conversation in the middle, the evidence on the right. One accent, oxblood,
-reserved for citations and the primary action. Emphasis comes from weight and size, never from
-gradients, glows or coloured stripes.
+- Fixed left rail, 256 px: brand, three views (Library · Ask & Synthesize · Runs & Traces), a Corpus Index
+  card (papers, full text, chunks, index size, backend) and the "Local model · nothing leaves this machine" pill.
+- Fixed top header, 56 px: Workspace / corpus-query breadcrumb, model badge, Add Papers, light/dark toggle,
+  settings, avatar.
+- Ask: scope row → centred query box with "Synthesize" → engine metadata line → 8/4 grid of the synthesis card
+  (status eyebrow, serif headline, prose with `[n]` citation badges, metrics strip, copy actions) and the
+  collapsible Execution Trace; sticky Retrieved Evidence column on the right.
+- Library: filter chips, paper table (title & reference, venue & year, chunks, embeddings, actions), pager,
+  sticky Paper Inspector with vector profile and BibTeX.
+- Runs: this session's queries (click to reopen), then the pipeline log from `results/runs.csv`.
+- Modals: Add Papers (the single network action, streaming steps) and Engine Settings (theme, model, chunks,
+  retrieval mode, k, rerank, engine facts).
 
 ## Tokens (mirrored in ui/app.css)
 
-| Token | Value | Use |
-|---|---|---|
-| `--paper` | `oklch(97.5% 0.012 85)` | page ground |
-| `--paper-2` | `oklch(94.8% 0.014 85)` | side panels, composer |
-| `--paper-3` | `oklch(91.5% 0.016 85)` | hover, inset |
-| `--ink` | `oklch(24% 0.02 60)` | text |
-| `--ink-2` | `oklch(42% 0.02 60)` | secondary text (tinted, never gray) |
-| `--ink-3` | `oklch(56% 0.018 60)` | meta, placeholders |
-| `--rule` | `oklch(24% 0.02 60 / 0.14)` | hairlines |
-| `--accent` | `oklch(44% 0.14 25)` | citations, primary action, focus |
-| `--accent-soft` | `oklch(90% 0.045 30)` | citation chip fill |
-| `--mark` | `oklch(93% 0.07 85)` | passage highlight (the marker pen) |
-| `--ok` / `--warn` | `oklch(45% 0.12 150)` / `oklch(55% 0.15 60)` | integrity states |
+Light scholarly: canvas `#f7f9fe`, cards `#ffffff`, containers `#f2f4f8 / #eceef2 / #e6e8ed`, ink `#191c1f`,
+secondary ink `#43474e`, outline `#74777f / #c4c6cf`, primary navy `#022448` (hover `#1e3a5f`), cyan accent
+`#0891b2` for icons, emerald `#306949` for verification, terra cotta `#431407 / #ffdbd1` for warnings.
 
-Dark scheme: the same roles on a warm near-black lacquer (`oklch(15% 0.01 70)`), ink becomes
-warm off-white; `prefers-color-scheme` only, no toggle. Both schemes keep body contrast ≥ 4.5:1.
+Monastic dark: canvas `#0b0f17`, cards `#111722`, elevated `#17202e`, borders `#222f42`, primary cyan
+`#0891b2 → #06b6d4`, accent ink `#67e8f9`, emerald `#34d399`. Chosen with the header toggle or the theme cards in
+settings; remembered in `localStorage`, defaulting to the OS preference.
 
 ## Type
 
-- UI: **IBM Plex Sans** 14 px (13 px in dense lists), weights 400/500/600.
-- Answer prose: **Source Serif 4** 17 px / 1.65, measure ≤ 68ch. Reading is the task.
-- Identifiers (chunk ids, DOIs, numbers in the verification line): **IBM Plex Mono** 12 px, tabular figures.
-- Scale: 12 · 13 · 14 · 15 · 17 · 20 · 24. Fixed rem, no fluid headings.
-- Fonts self-hosted in `ui/fonts/` (OFL). The app is offline-first and never calls a font CDN.
+- Headlines and paper titles: **Source Serif 4** (600).
+- UI and body: **IBM Plex Sans** in place of the reference's Inter (not in the repo; fonts are self-hosted).
+- Citations, DOIs, metrics, trace: **IBM Plex Mono** in place of JetBrains Mono, tabular figures.
+- Scale: 11 (labels/mono) · 12 · 13 · 14 · 15.5 (answer prose) · 17 · 24–26 (headlines).
+- Icons: inline SVG symbols with 1.8 px strokes, drawn after the lucide set the reference uses.
 
-## Layout
+## Data contract
 
-Three-column grid at ≥1180 px: library 272 px · conversation (max 72ch) · evidence 360 px.
-Between 820 and 1180 px the evidence panel becomes a tab beside the conversation. Below 820 px one
-column with a segmented Library / Ask / Evidence switch. Composer anchored at the bottom of the
-conversation column; controls (mode, rerank, model, chunks) sit on one quiet row beneath the box.
+`/api/status` fills the rail, header, scope row, settings and metadata line. `/api/papers` fills the Library.
+`/api/ask` (SSE) drives the Ask view: `sources` → evidence cards, `thinking`/`token` deltas → live prose,
+`done` → citation badges, metrics strip, trace, session run. `/api/discover` (SSE) drives Add Papers.
+`/api/runs` fills the pipeline log.
+
+Honesty rules kept from the first UI: the evidence "match" pill is the score relative to the top hit, labelled
+as such (RRF and cross-encoder scores are not percentages); citation integrity, latency and token counts are
+the real numbers from the answer; an answer with no citations is labelled as such rather than "grounded".
 
 ## Interaction
 
-- Enter sends, Shift+Enter breaks a line. The send control is disabled while a run is live.
-- Status line during a run: "Retrieving…" → "Reading n passages…" → streamed tokens with a caret.
-- Citation chips `[S3]` in the answer are buttons: click scrolls the passage into view and plays the
-  single authored motion, a marker sweep across that passage (220 ms, exponential ease-out).
-- Evidence entries: rank, id, label · §section · pages; cited ones carry the accent numeral and a
-  "cited" tag; not-in-context ones are dimmed as "retrieved, not sent". Click expands the full text.
-- Verification line under every answer: integrity · retrieval ms · generation s · tok/s · model.
-- Reasoning (thinking-only models) is a collapsed disclosure with a live character count, muted.
-- Discovery is a drawer opened by "Add papers"; its copy names the network use plainly.
-
-## Refusals honoured (craft floor)
-
-No kickers/eyebrows, no numbered section markers, no card grids, no gradient text, no glass, no
-side-stripe borders above 1 px, no glyph/emoji icons (authored SVG at 1.5 px stroke), no page-load
-choreography, no scattered fades. Skeleton rows for loading; empty state that teaches.
+- Enter runs, Shift+Enter breaks a line. The button reads "Synthesizing…" while a run is live.
+- Status eyebrow: Retrieving → Reading → Reasoning (thinking-only models) → Synthesizing → Grounded Synthesis.
+- `[n]` badges are buttons: click highlights the badge and the matching evidence card and scrolls it into view;
+  clicking a card highlights its badges. Cards expand to the full passage.
+- Copy Markdown (answer + numbered sources + metrics) and Copy raw JSON (question, config, sources, answer).
+- Runs view reopens any earlier answer from this session without re-querying the model.
+- If Ollama is down the pill says so and the page re-polls every 10 s.

@@ -29,7 +29,7 @@ def _events(resp):
 
 def test_home_and_static(client):
     r = client.get("/")
-    assert r.status_code == 200 and "Reading Room" in r.text and "/ui/app.js" in r.text
+    assert r.status_code == 200 and "Corpus" in r.text and "/ui/app.js" in r.text
     assert client.get("/ui/app.css").status_code == 200
     f = client.get("/ui/fonts/fonts.css")
     assert f.status_code == 200 and "IBM Plex Sans" in f.text
@@ -46,6 +46,13 @@ def test_status_and_papers(client):
     full = [x for x in p if x["has_full_text"]]
     assert full and all(x["n_chunks"] > 0 for x in full)
     assert all("label" in x and x["title"] for x in p)
+
+
+def test_runs_log(client):
+    r = client.get("/api/runs?limit=5").json()
+    assert "runs" in r and r["total"] >= len(r["runs"]) and len(r["runs"]) <= 5
+    assert all("timestamp" in row for row in r["runs"])
+    assert client.get("/api/runs?limit=0").json()["runs"] == client.get("/api/runs?limit=1").json()["runs"]
 
 
 def test_chunk_lookup(client):

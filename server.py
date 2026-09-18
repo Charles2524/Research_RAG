@@ -1,4 +1,4 @@
-"""Local API + static server for the web UI (ui/). Run: ``python server.py`` -> http://127.0.0.1:8765
+"""Local API + static server for the web UI (ui/, "Corpus"). Run: ``python server.py`` -> http://127.0.0.1:8765
 
 Same modules as the Streamlit page, same boundary: /api/ask and /api/papers are local-only;
 /api/discover is the single explicit network action (C2) and refuses in offline mode (C3).
@@ -76,8 +76,20 @@ def status(request: Request) -> JSONResponse:      # sync: runs on the thread po
         "n_chunks": stats["n_chunks"], "vector_backend": stats["vector_backend"],
         "index_size_mb": stats["index_size_mb"], "embedding_model": c.embedding_model,
         "contact_email_set": bool(c.contact_email), "modes": list(RETRIEVAL_MODES),
-        "chunks_per_paper": per_paper,
+        "chunks_per_paper": per_paper, "fetch_query": c.fetch_query,
     })
+
+
+def runs(request: Request) -> JSONResponse:
+    """Latest rows of results/runs.csv (the metrics log every phase writes to), newest first."""
+    import csv
+    c = cfg()
+    limit = max(1, min(int(request.query_params.get("limit") or 40), 500))
+    rows: list[dict] = []
+    if c.runs_csv.exists():
+        with c.runs_csv.open(newline="", encoding="utf-8") as fh:
+            rows = [{k: v for k, v in r.items() if v not in ("", None)} for r in csv.DictReader(fh)]
+    return JSONResponse({"runs": rows[::-1][:limit], "total": len(rows), "path": str(c.runs_csv)})
 
 
 def papers(request: Request) -> JSONResponse:
@@ -265,6 +277,7 @@ app = Starlette(lifespan=_lifespan, routes=[
     Route("/", home),
     Route("/api/status", status),
     Route("/api/papers", papers),
+    Route("/api/runs", runs),
     Route("/api/chunk/{chunk_id:path}", chunk_by_id),
     Route("/api/ask", ask, methods=["POST"]),
     Route("/api/discover", discover, methods=["POST"]),
