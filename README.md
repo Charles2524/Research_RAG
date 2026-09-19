@@ -40,7 +40,9 @@ checks and puts a **Corpus** shortcut on the desktop. Mostly download time: 10-2
 to run again; finished steps are skipped. If Python, Ollama or the runtime is missing it opens the
 download page and waits.
 
-Afterwards start the app with `run.bat` (or the desktop shortcut): it starts Ollama if needed, serves
+Afterwards start the app with `run.bat` (or the desktop shortcut): it starts Ollama if needed, checks
+that the model actually landed on the GPU (`python generate.py --gpu-check`; Ollama's start-up GPU probe
+can time out after a reboot and silently fall back to CPU, so the launcher restarts it once if so), serves
 the UI on http://127.0.0.1:8765 and opens your browser. The library starts empty; click **Add Papers**
 to search, download and index open-access papers on any topic, or create a separate corpus per topic
 from the breadcrumb menu.

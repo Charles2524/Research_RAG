@@ -94,6 +94,21 @@ def loaded_models(cfg: Config) -> list[dict]:
     return ollama_call(cfg, "GET", "/api/ps", timeout=10).get("models", [])
 
 
+def gpu_placement(cfg: Config, model: str) -> tuple[str, float]:
+    """Load ``model`` (keep-alive from config warm-up) and report where Ollama put it.
+
+    Returns ("gpu" | "partial" | "cpu", share_in_vram). Ollama's start-up GPU probe sometimes times
+    out after a reboot and it silently falls back to CPU; run.bat uses this to restart it once.
+    """
+    warm_up(cfg, model)
+    for m in loaded_models(cfg):
+        if m.get("name") in (model, f"{model}:latest") or m.get("model") == model:
+            size, vram = float(m.get("size") or 0), float(m.get("size_vram") or 0)
+            share = vram / size if size else 0.0
+            return ("gpu" if share >= 0.99 else "partial" if share > 0 else "cpu"), share
+    return "cpu", 0.0
+
+
 def resident_mb(cfg: Config, model: str | None = None) -> float:
     total = 0
     for m in loaded_models(cfg):
@@ -327,6 +342,15 @@ if __name__ == "__main__":
     from config import load_config
     logging.basicConfig(level=logging.WARNING)
     c = load_config()
+    if "--gpu-check" in sys.argv:            # run.bat: exit 0 on GPU/partial, 2 on CPU-only, 1 if Ollama is down
+        model = sys.argv[sys.argv.index("--gpu-check") + 1] if len(sys.argv) > sys.argv.index("--gpu-check") + 1 else c.llm_fallback_model
+        try:
+            where, share = gpu_placement(c, model)
+        except GenerationError as e:
+            print(f"ollama: {e}")
+            sys.exit(1)
+        print(f"{model}: {where} ({share:.0%} of the model in GPU memory)")
+        sys.exit(2 if where == "cpu" else 0)
     if "--bench" in sys.argv:
         q = "What are the two main components of retrieval-augmented generation and how do they interact?"
         for row in benchmark_models(c, q):

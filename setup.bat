@@ -93,7 +93,7 @@ echo       starting the Ollama server
 start "Ollama" /min ollama serve
 set /a WAIT=0
 :ollama_wait
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 curl -s -m 3 http://127.0.0.1:11434/api/tags >nul 2>&1 && goto :ollama_up
 set /a WAIT+=3
 if %WAIT% LSS 120 goto :ollama_wait

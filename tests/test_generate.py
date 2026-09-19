@@ -4,6 +4,19 @@ from __future__ import annotations
 
 import pytest
 
+
+def test_gpu_placement_classifies_from_ps(monkeypatch):
+    import generate
+    from config import load_config
+    cfg = load_config()
+    monkeypatch.setattr(generate, "warm_up", lambda c, m, **kw: None)
+    rows = {"g": [{"name": "qwen3:1.7b", "size": 100, "size_vram": 100}],
+            "p": [{"name": "qwen3:1.7b", "size": 100, "size_vram": 79}],
+            "c": [{"name": "qwen3:1.7b", "size": 100, "size_vram": 0}], "none": []}
+    for key, want in (("g", "gpu"), ("p", "partial"), ("c", "cpu"), ("none", "cpu")):
+        monkeypatch.setattr(generate, "loaded_models", lambda c, r=rows[key]: r)
+        assert generate.gpu_placement(cfg, "qwen3:1.7b")[0] == want
+
 import generate
 from config import load_config
 from models import Answer, Chunk, Retrieved

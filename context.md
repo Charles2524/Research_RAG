@@ -66,8 +66,14 @@ Full suite: `.venv\Scripts\python -m pytest -q`.
 - Ollama: `F:\ollama\ollama.exe`, models in `F:\ollama\models` (`OLLAMA_MODELS`), start with `ollama serve`
   (the tray app does not open the port). HF cache at `F:\hf_cache` via `.env`. pip cache `F:\pip_cache`.
 - GPU: GTX 1050, 3 GB. **After a reboot Ollama's GPU discovery can time out and it silently runs on CPU**
-  (log says `offloaded 0/29 layers`). Restart `ollama serve` and check for `library=CUDA` / `29/29 layers`.
-  On GPU: qwen3:1.7b ≈ 42 tok/s generation, 214 tok/s prompt; on CPU ≈ 9 and 15.
+  (log says `offloaded 0/29 layers`). Intermittent: timed runs of the probe took 60–150 s when it succeeded
+  and 90 s when it failed; `OLLAMA_LLM_LIBRARY=cuda_v12` did not measurably change it. `run.bat` therefore
+  loads the model, runs `python generate.py --gpu-check` (`/api/ps` size_vram) and restarts Ollama once if
+  the model is CPU-only. `ollama ps` shows the split (`100% GPU` is the goal; a browser with hardware
+  acceleration can hold enough VRAM to force a partial offload). On GPU: qwen3:1.7b ≈ 42 tok/s generation,
+  214 tok/s prompt; on CPU ≈ 9 and 15.
+- Two Ollama installs exist: `F:\Ollama` and `C:\Users\charl\AppData\Local\Programs\Ollama` (tray app,
+  autostarts at login and takes port 11434). Both use `F:\ollama\models`. Only one can serve at a time.
 - qwen3:4b is a thinking-only build (ignores `think=false`); handled via `thinking_only_models`. It only partly
   fits in 3 GB VRAM, so the UI defaults to qwen3:1.7b.
 - arXiv's search API rate-limits this IP; OAI-PMH and the PDF host work.
