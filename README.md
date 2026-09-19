@@ -2,9 +2,11 @@
 
 A local-first research companion that discovers and downloads scientific papers over the
 network, then parses, indexes, retrieves and answers questions over them **entirely offline**
-on a CPU-only Windows machine. The deliverable is a measured ablation of which retrieval and
-generation choices matter when the model is small and the machine is constrained
-(see `SPEC.md`; results in `results/runs.csv`).
+on an ordinary Windows machine (CPU, or a small GPU if one is present). The deliverable is a
+measured ablation of which retrieval and generation choices matter when the model is small and the
+machine is constrained (see `SPEC.md`; results in `results/runs.csv` and `results/ablation_table.md`),
+plus a demo web UI ("Corpus"), per-topic corpora, a one-script installer and a presentation deck
+(`report/`). A full file map and the machine-specific facts are in `context.md`.
 
 Privacy boundary: no module below the ingestion layer holds a network client (enforced by
 `tests/test_privacy.py`). Paper text, chunks, embeddings and answers never leave the machine.
@@ -20,7 +22,8 @@ every network client is disabled and the full RAG pipeline works unchanged.
 | [Ollama for Windows](https://ollama.com) | 0.15.x | serves the local LLM |
 | Microsoft Visual C++ 2015-2022 x64 runtime | [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) | required by PyMuPDF |
 | RAM | 8 GB baseline | peak measured ~3.9 GB with the 4B model |
-| GPU | none | everything runs on CPU |
+| GPU | optional | Ollama uses an NVIDIA GPU if it finds one (qwen3:1.7b needs ~2 GB VRAM); everything else runs on CPU |
+| Disk | ~5 GB | 1 GB Python packages, 1.9 GB `qwen3:1.7b` (+2.5 GB optional `qwen3:4b`), 220 MB embedding models, plus the corpus |
 
 ## Quick setup (one script)
 
@@ -115,11 +118,21 @@ Ask & Synthesize streams the answer with inline `[n]` citation badges next to a 
 column: click a badge to jump to the exact passage. Every answer carries its metrics strip (citation
 integrity, retrieval and generation time, tokens per second) and an execution trace. Library lists
 every paper with a Paper Inspector; Runs & Traces keeps this session's questions and the pipeline log.
-Each research topic can be its own corpus (folder) and switched from the breadcrumb menu. "Add Papers"
-is the one network action and says so. Fonts are self-hosted
-(`ui/fonts/`, OFL); no CDN is contacted. The server binds to 127.0.0.1 only and needs no extra
-dependencies (starlette and uvicorn ship with streamlit). Design decisions are recorded in
-`ui/DESIGN.md`.
+"Add Papers" is the one network action and says so. Fonts are self-hosted (`ui/fonts/`, OFL); no CDN
+is contacted. The server binds to 127.0.0.1 only and needs no extra dependencies (starlette and uvicorn
+ship with streamlit). Design decisions are recorded in `ui/DESIGN.md`.
+
+Settings (model, retrieval mode, top-k, rerank, chunks sent to the model, light/dark theme) live behind
+the gear icon and apply to the next question; defaults come from `config.yaml`. The 1.7B model is the
+default for speed; `qwen3:4b` reasons before answering and is several times slower.
+
+### Corpora: one folder per research topic
+
+Every corpus is a folder with its own PDFs, markdown, metadata, cache and vector index: `data/` by
+default, `data_<name>/` for topics created from the UI. Click the corpus name in the header breadcrumb
+(or "switch" on the Corpus Index card) to list, switch or create one; creating a corpus opens Add Papers
+with its search query pre-filled. Switching is instant, nothing is deleted or re-downloaded, and the
+choice is remembered across restarts (`.active_corpus`). Corpus folders are gitignored.
 
 The single-page Streamlit app from the SPEC is still available:
 
@@ -161,13 +174,29 @@ Notes that matter on this stack:
 - The arXiv search API rate-limits some IPs with HTTP 429; the adapter backs off and the test skips
   with an explicit "UNVERIFIED" reason. arXiv OAI-PMH and PDF downloads are unaffected.
 - First model load from an HDD takes about a minute; later loads come from the page cache.
+- With an NVIDIA GPU, Ollama's start-up GPU probe sometimes times out after a reboot and it silently
+  serves the model from the CPU (`ollama ps` shows `100% CPU`; measured 9 tok/s vs 42 tok/s on a
+  GTX 1050). `run.bat` detects this and restarts Ollama once; by hand, stop every Ollama process and
+  run `ollama serve` again. A browser with hardware acceleration can hold enough VRAM to force a
+  partial offload; close it before loading the model if you want the full speed.
+- Two Ollama installs (the tray app and a manual `ollama serve`) cannot both serve on port 11434;
+  the "bind: only one usage of each socket address" error just means one is already running.
+
+## Presentation
+
+`report/RAG_Research_Presentation.pptx` and `.pdf` (13 slides: literature survey, gap, method, results,
+pending work, timeline) are generated from the project data by `python report/make_deck.py`.
 
 ## Layout
 
 ```
-config.py models.py sources/ fetch.py parse.py chunk.py index.py retrieve.py generate.py
-evaluate.py ablate.py app.py server.py ui/ tests/ config.yaml .env.example requirements.txt SPEC.md CLAUDE.md
-data/{pdfs,md,meta,cache,index.db}   results/{runs.csv,eval_set.jsonl,answers_*.jsonl}
+config.py models.py sources/ fetch.py parse.py chunk.py index.py retrieve.py generate.py   # pipeline
+evaluate.py ablate.py                                                                       # metrics, sweep
+server.py ui/{index.html,app.css,app.js,fonts/,DESIGN.md}   app.py .streamlit/              # Corpus UI, Streamlit UI
+setup.bat run.bat                                                                            # installer, launcher
+tests/ config.yaml .env.example requirements.txt SPEC.md CLAUDE.md context.md report/
+data/{pdfs,md,meta,cache,index.db,corpus.json}  data_<name>/ (same layout)  .active_corpus  # gitignored
+results/{runs.csv,eval_set.jsonl,ablation_table.md,answers_*.jsonl}
 ```
 
 ## License
